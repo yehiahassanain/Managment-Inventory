@@ -1,27 +1,20 @@
-﻿import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { getSession } from "../../../lib/session";
+import type { Metadata } from "next";
 import {
   getAnalyticsSummary,
   getProfitReport,
-  getTopSellingProducts,
-  getInventoryOverview,
   getSalesByCategory,
   getSalesTrend,
-  getRecentTransactions,
 } from "./actions";
 import KPICard from "../../../components/analytics/KPICard";
 import PeriodTabs, { Period } from "../../../components/analytics/PeriodTabs";
 import DateRangeFilter from "../../../components/analytics/DateRangeFilter";
-import TopProductsTable from "../../../components/analytics/TopProductsTable";
 import CategoryBreakdown from "../../../components/analytics/CategoryBreakdown";
-import RecentActivity from "../../../components/analytics/RecentActivity";
 import SalesTrendChart from "../../../components/analytics/SalesTrendChart";
 import ChartMetricSwitcher, { ChartMetric } from "../../../components/analytics/ChartMetricSwitcher";
 
 export const metadata: Metadata = {
-  title: "Analytics — Inventory Management System",
-  description: "Admin analytics dashboard — revenue, profit, sales, inventory overview.",
+  title: "Financial Overview — Analytics",
+  description: "Revenue, profit, and sales trend analysis for administrators.",
 };
 
 export const dynamic = "force-dynamic";
@@ -49,11 +42,6 @@ interface PageProps {
 }
 
 export default async function AnalyticsPage({ searchParams }: PageProps) {
-  const session = await getSession();
-  if (!session || session.role !== "ADMIN") {
-    redirect("/dashboard");
-  }
-
   const sp = await searchParams;
 
   const profitPeriod = (sp.profitPeriod as Period) ?? "month";
@@ -62,42 +50,17 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const customFrom = sp.from;
   const customTo = sp.to;
 
-  const [summary, profitReport, salesReport, topProducts, inventoryOverview, categoryData, trendData, recentTx] =
+  const [summary, profitReport, salesReport, categoryData, trendData] =
     await Promise.all([
       getAnalyticsSummary(),
       getProfitReport(profitPeriod, customFrom, customTo),
       getProfitReport(salesPeriod, customFrom, customTo),
-      getTopSellingProducts(10),
-      getInventoryOverview(),
       getSalesByCategory(),
       getSalesTrend(30),
-      getRecentTransactions(15),
     ]);
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-8">
-
-      {/* ── Page Header ─────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/60 pb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-white">Analytics Dashboard</h1>
-          </div>
-          <p className="text-slate-500 text-sm">
-            Business intelligence — revenue, profit, and inventory insights
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-500 bg-violet-500/10 border border-violet-500/20 text-violet-400 px-3 py-1.5 rounded-full">
-            Admin View
-          </span>
-        </div>
-      </div>
+    <div className="space-y-8">
 
       {/* ── KPI Cards ────────────────────────────────────────────── */}
       <section>
@@ -249,7 +212,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </section>
       </div>
 
-      {/* Custom Date Range */}
+      {/* ── Custom Date Range ─────────────────────────────────────── */}
       <section className="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-5">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="shrink-0">
@@ -260,120 +223,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </div>
       </section>
 
-      {/* ── Top Selling Products ──────────────────────────────────── */}
+      {/* ── Revenue by Category ───────────────────────────────────── */}
       <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-base font-bold text-white">Top Selling Products</h2>
-            <p className="text-slate-500 text-xs mt-0.5">Ranked by total units sold</p>
-          </div>
-          <span className="text-xs text-slate-600 bg-slate-800 border border-slate-700/50 rounded-lg px-3 py-1.5">
-            Top 10
-          </span>
+        <div className="mb-5">
+          <h2 className="text-base font-bold text-white">Revenue by Category</h2>
+          <p className="text-slate-500 text-xs mt-0.5">Share of total revenue per category</p>
         </div>
-        <TopProductsTable products={topProducts} />
+        <CategoryBreakdown data={categoryData} />
       </section>
-
-      {/* ── Inventory Overview + Stock Alerts ────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Inventory stats */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-base font-bold text-white mb-5">Inventory Overview</h2>
-          <div className="space-y-3">
-            {[
-              { label: "Total Products", value: fmtNum(inventoryOverview.totalProducts), color: "text-indigo-400" },
-              { label: "Categories", value: fmtNum(inventoryOverview.totalCategories), color: "text-violet-400" },
-              { label: "Suppliers", value: fmtNum(inventoryOverview.totalSuppliers), color: "text-cyan-400" },
-              { label: "Inventory Value", value: fmt(inventoryOverview.inventoryValue), color: "text-emerald-400" },
-              { label: "Low Stock Items", value: fmtNum(inventoryOverview.lowStockProducts.length), color: "text-amber-400" },
-              { label: "Out of Stock", value: fmtNum(inventoryOverview.outOfStockProducts.length), color: "text-rose-400" },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between py-2 border-b border-slate-800/40 last:border-0">
-                <span className="text-xs text-slate-500">{row.label}</span>
-                <span className={`text-sm font-bold ${row.color}`}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Low Stock */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-amber-500/15 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <h2 className="text-base font-bold text-white">Low Stock</h2>
-            <span className="ml-auto text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-              {inventoryOverview.lowStockProducts.length}
-            </span>
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {inventoryOverview.lowStockProducts.length === 0 ? (
-              <p className="text-slate-600 text-xs text-center py-6">All products are well-stocked</p>
-            ) : (
-              inventoryOverview.lowStockProducts.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-slate-800/40 last:border-0">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200 truncate max-w-[140px]">{p.name}</p>
-                    <p className="text-[10px] text-slate-600">{p.categoryName}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-amber-400">{p.quantity} left</p>
-                    <p className="text-[10px] text-slate-600">min {p.minimumStock}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Out of Stock */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-rose-500/15 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-            <h2 className="text-base font-bold text-white">Out of Stock</h2>
-            <span className="ml-auto text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">
-              {inventoryOverview.outOfStockProducts.length}
-            </span>
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-            {inventoryOverview.outOfStockProducts.length === 0 ? (
-              <p className="text-slate-600 text-xs text-center py-6">No out-of-stock products</p>
-            ) : (
-              inventoryOverview.outOfStockProducts.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-slate-800/40 last:border-0">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-200 truncate max-w-[140px]">{p.name}</p>
-                    <p className="text-[10px] text-slate-600">{p.categoryName}</p>
-                  </div>
-                  <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">
-                    Empty
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
-
-      {/* ── Sales by Category + Recent Activity ──────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Category breakdown */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <div className="mb-5">
-            <h2 className="text-base font-bold text-white">Revenue by Category</h2>
-            <p className="text-slate-500 text-xs mt-0.5">Share of total revenue per category</p>
-          </div>
-          <CategoryBreakdown data={categoryData} />
-        </section>
-
-        {/* Recent activity */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <div className="mb-5">
-            <h2 className="text-base font-bold text-white">Recent Activity</h2>
-            <p className="text-slate-500 text-xs mt-0.5">Latest inventory transactions</p>
-          </div>
-          <RecentActivity transactions={recentTx} />
-        </section>
-      </div>
 
     </div>
   );
