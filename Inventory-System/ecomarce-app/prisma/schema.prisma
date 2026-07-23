@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider            = "prisma-client"
+  engineType          = "client"
+  output              = "./generated/main"
+  moduleFormat        = "cjs"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                    String                  @id @default(uuid())
+  name                  String
+  email                 String                  @unique
+  role                  Role                    @default(USER)
+  pic                   Bytes?
+  password              String
+  inventoryTransactions Inventory_Transaction[] @relation("UserInventoryTransactions")
+  item                  Items[]                 @relation("UserItem")
+  userInventory         Inventory[]             @relation("UserInventory")
+  userCategory          Category[]              @relation("UserCategory")
+  userSupplier          Supplier[]              @relation("UserSupplier")
+}
+
+model Items {
+  id           String     @id @default(uuid())
+  name         String
+  sku          String?    @unique
+  barcode      String     @unique
+  imageUrl     String?
+  description  String
+  minimumStock Int
+  note         String
+  createdOn    DateTime   @default(now())
+  createdBy    String
+  updatedOn    DateTime   @updatedAt
+  updatedBy    String
+  deletedAt    DateTime   @default(now())
+  deletedBy    String
+  categoryId   String
+  category     Category   @relation("CategoryItems", fields: [categoryId], references: [id])
+  inventory    Inventory? @relation("InventoryItems")
+  userItem     User       @relation("UserItem", fields: [userItemId], references: [id])
+  userItemId   String
+  supplierId   String?
+  supplier     Supplier?  @relation("SupplierItems", fields: [supplierId], references: [id])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+  deletedAt DateTime @default(now())
+  deletedBy String
+  items     Items[]  @relation("CategoryItems")
+  userCategory User @relation("UserCategory", fields: [userCategoryId], references: [id])
+  userCategoryId String
+}
+
+model Inventory {
+  id              String                  @id @default(uuid())
+  sellPrice       Float
+  buyPrice        Float
+  quantity        Int
+  Note            String
+  createdAt       DateTime                @default(now())
+  createdBy       String
+  updatedAt       DateTime                @updatedAt
+  updatedBy       String
+  deletedAt       DateTime                @default(now())
+  deletedBy       String
+  itemId          String                  @unique
+  item            Items                   @relation("InventoryItems", fields: [itemId], references: [id])
+  transactions    Inventory_Transaction[]   @relation("InventoryTransactions")
+  userInventory   User                    @relation("UserInventory", fields: [userInventoryId], references: [id])
+  userInventoryId String
+}
+
+model Inventory_Transaction {
+  id        String      @id @default(uuid())
+  quantity  Int
+  type      TransactionType
+  createdBy String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  updatedBy String
+  deletedAt DateTime    @default(now())
+  deletedBy String
+  user      User        @relation("UserInventoryTransactions", fields: [userId], references: [id])
+  userId    String
+  inventory Inventory  @relation("InventoryTransactions",fields: [inventoryId], references: [id])
+  inventoryId String 
+  // inventory Inventory
+}
+
+model Supplier {
+  id             String   @id @default(uuid())
+  name           String
+  contactName    String?
+  email          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime @default(now())
+  createdBy      String
+  updatedAt      DateTime @updatedAt
+  updatedBy      String
+  deletedAt      DateTime @default(now())
+  deletedBy      String
+  items          Items[]  @relation("SupplierItems")
+  userSupplier   User     @relation("UserSupplier", fields: [userSupplierId], references: [id])
+  userSupplierId String
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum TransactionType {
+  Sold
+  Restock
+  Return
+  Damaged
+}
