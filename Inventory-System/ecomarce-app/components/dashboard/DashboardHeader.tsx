@@ -5,7 +5,7 @@ interface DashboardHeaderProps {
   sessionEmail: string;
   sessionRole: string;
 }
-
+// DashboardHeader
 export default function DashboardHeader({ userCount, sessionEmail, sessionRole }: DashboardHeaderProps) {
   return (
     <header className="w-full max-w-6xl mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5 border-b border-slate-800 pb-8">
