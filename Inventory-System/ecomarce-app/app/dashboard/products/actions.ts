@@ -3,7 +3,7 @@
 import { db } from "../../../lib/db";
 import { getSession } from "../../../lib/session";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
 // Helper to handle image uploads to /public/uploads/
@@ -31,6 +31,21 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
   } catch (error) {
     console.error("Error saving image:", error);
     return null;
+  }
+}
+
+// Helper to delete an image file from /public/uploads/ (best-effort, won't throw)
+async function deleteImageFile(imageUrl: string | null | undefined): Promise<void> {
+  if (!imageUrl || !imageUrl.startsWith("/uploads/")) return;
+  try {
+    const filename = path.basename(imageUrl);
+    const filePath = path.join(process.cwd(), "public", "uploads", filename);
+    await unlink(filePath);
+  } catch (error: any) {
+    // If the file doesn't exist (ENOENT), silently skip — otherwise log it
+    if (error?.code !== "ENOENT") {
+      console.error("Error deleting image file:", error);
+    }
   }
 }
 
@@ -172,11 +187,13 @@ export async function getProductById(productId: string) {
 
 export async function createProduct(formData: FormData) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session || session.role !== "ADMIN") {
+    return { success: false, error: "Unauthorized: Admin access required." };
+  }
 
   const name = formData.get("name") as string;
   const sku = (formData.get("sku") as string)?.trim() || null;
-  const barcode = (formData.get("barcode") as string)?.trim();
+  const submittedBarcode = (formData.get("barcode") as string)?.trim();
   const categoryId = formData.get("categoryId") as string;
   const supplierId = (formData.get("supplierId") as string) || null;
   const buyPrice = parseFloat(formData.get("buyPrice") as string);
@@ -187,15 +204,21 @@ export async function createProduct(formData: FormData) {
   const imageFile = formData.get("image") as File | null;
 
   // Validation
-  if (!name || !barcode || !categoryId || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity) || isNaN(minimumStock)) {
+  if (!name || !categoryId || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity) || isNaN(minimumStock)) {
     return { success: false, error: "Please fill all required fields correctly." };
   }
 
   try {
+    let barcode = submittedBarcode || sku || `BC-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     // Check barcode uniqueness
     const existingBarcode = await db.items.findUnique({ where: { barcode } });
     if (existingBarcode) {
-      return { success: false, error: "A product with this barcode already exists." };
+      if (submittedBarcode) {
+        return { success: false, error: "A product with this barcode already exists." };
+      } else {
+        barcode = `BC-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      }
     }
 
     // Check SKU uniqueness
@@ -270,36 +293,109 @@ export async function createProduct(formData: FormData) {
   }
 }
 
+export interface StockAlertItem {
+  id: string;
+  name: string;
+  sku: string | null;
+  imageUrl: string | null;
+  quantity: number;
+  minimumStock: number;
+  categoryName: string;
+}
+
+export async function getStockAlerts(): Promise<{
+  lowStockProducts: StockAlertItem[];
+  outOfStockProducts: StockAlertItem[];
+}> {
+  const session = await getSession();
+  if (!session) return { lowStockProducts: [], outOfStockProducts: [] };
+
+  const items = await db.items.findMany({
+    include: { inventory: true, category: true },
+    orderBy: { name: "asc" },
+  });
+
+  const toStockItem = (item: (typeof items)[0]): StockAlertItem => ({
+    id: item.id,
+    name: item.name,
+    sku: item.sku,
+    imageUrl: item.imageUrl,
+    quantity: item.inventory?.quantity ?? 0,
+    minimumStock: item.minimumStock,
+    categoryName: item.category?.name ?? "—",
+  });
+
+  return {
+    lowStockProducts: items
+      .filter((i) => (i.inventory?.quantity ?? 0) > 0 && (i.inventory?.quantity ?? 0) <= i.minimumStock)
+      .map(toStockItem),
+    outOfStockProducts: items
+      .filter((i) => (i.inventory?.quantity ?? 0) === 0)
+      .map(toStockItem),
+  };
+}
+
 export async function updateProduct(formData: FormData) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) {
+    return { success: false, error: "Unauthorized" };
+  }
 
   const productId = formData.get("productId") as string;
   const name = formData.get("name") as string;
   const sku = (formData.get("sku") as string)?.trim() || null;
-  const barcode = (formData.get("barcode") as string)?.trim();
+  const submittedBarcode = (formData.get("barcode") as string)?.trim();
   const categoryId = formData.get("categoryId") as string;
-  const supplierId = (formData.get("supplierId") as string) || null;
-  const buyPrice = parseFloat(formData.get("buyPrice") as string);
-  const sellPrice = parseFloat(formData.get("sellPrice") as string);
-  const quantity = parseInt(formData.get("quantity") as string, 10);
+  const rawSupplierId = formData.get("supplierId") as string;
+  const rawBuyPrice = formData.get("buyPrice") as string;
+  const rawSellPrice = formData.get("sellPrice") as string;
+  const rawQuantity = formData.get("quantity") as string;
   const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
   const description = formData.get("description") as string;
   const imageFile = formData.get("image") as File | null;
   const existingImageUrl = formData.get("existingImageUrl") as string;
   const transactionType = (formData.get("transactionType") as string) || "Restock";
 
-  if (!productId || !name || !barcode || !categoryId || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity) || isNaN(minimumStock)) {
+  if (!productId || !name || !categoryId || isNaN(minimumStock)) {
     return { success: false, error: "Please fill all required fields correctly." };
   }
 
   try {
-    // Check barcode uniqueness excluding current
-    const barcodeDup = await db.items.findFirst({
-      where: { barcode, id: { not: productId } },
+    // Fetch existing product
+    const existingProduct = await db.items.findUnique({
+      where: { id: productId },
+      include: { inventory: true },
     });
-    if (barcodeDup) {
-      return { success: false, error: "A product with this barcode already exists." };
+
+    if (!existingProduct) {
+      return { success: false, error: "Product not found." };
+    }
+
+    const buyPrice = (rawBuyPrice !== null && rawBuyPrice !== "" && !isNaN(parseFloat(rawBuyPrice)))
+      ? parseFloat(rawBuyPrice)
+      : (existingProduct.inventory?.buyPrice ?? 0);
+    const sellPrice = (rawSellPrice !== null && rawSellPrice !== "" && !isNaN(parseFloat(rawSellPrice)))
+      ? parseFloat(rawSellPrice)
+      : (existingProduct.inventory?.sellPrice ?? 0);
+    const supplierId = rawSupplierId !== undefined && rawSupplierId !== null
+      ? (rawSupplierId || null)
+      : existingProduct.supplierId;
+
+    const parsedQty = parseInt(rawQuantity, 10);
+    const quantity = (rawQuantity !== null && rawQuantity !== "" && !isNaN(parsedQty))
+      ? parsedQty
+      : (existingProduct.inventory?.quantity ?? 0);
+
+    const barcode = submittedBarcode || existingProduct.barcode;
+
+    // Check barcode uniqueness excluding current
+    if (submittedBarcode) {
+      const barcodeDup = await db.items.findFirst({
+        where: { barcode, id: { not: productId } },
+      });
+      if (barcodeDup) {
+        return { success: false, error: "A product with this barcode already exists." };
+      }
     }
 
     // Check SKU uniqueness excluding current
@@ -312,20 +408,12 @@ export async function updateProduct(formData: FormData) {
       }
     }
 
-    // Fetch existing product
-    const existingProduct = await db.items.findUnique({
-      where: { id: productId },
-      include: { inventory: true },
-    });
-
-    if (!existingProduct) {
-      return { success: false, error: "Product not found." };
-    }
-
     // Image upload logic
     let finalImageUrl = existingImageUrl || null;
     const newUploadedUrl = await handleImageUpload(imageFile);
     if (newUploadedUrl) {
+      // Delete old image file from disk since it's being replaced with a new one
+      await deleteImageFile(existingProduct.imageUrl);
       finalImageUrl = newUploadedUrl;
     }
 
@@ -352,12 +440,20 @@ export async function updateProduct(formData: FormData) {
       const oldQty = existingProduct.inventory?.quantity ?? 0;
       const qtyDiff = quantity - oldQty;
 
+      // When stock decreases, it always means the product was Sold.
+      const resolvedTransactionType = qtyDiff < 0
+        ? "Sold"
+        : (transactionType as "Sold" | "Restock" | "Return" | "Damaged");
+
+      // If reason is Damaged when adding stock (qtyDiff > 0), do not add to available stock (remains at oldQty).
+      const finalQuantity = resolvedTransactionType === "Damaged" && qtyDiff > 0 ? oldQty : quantity;
+
       const updatedInventory = await tx.inventory.update({
         where: { itemId: productId },
         data: {
           buyPrice,
           sellPrice,
-          quantity,
+          quantity: finalQuantity,
           updatedBy: updaterName,
         },
       });
@@ -367,7 +463,7 @@ export async function updateProduct(formData: FormData) {
         await tx.inventory_Transaction.create({
           data: {
             quantity: Math.abs(qtyDiff),
-            type: transactionType as "Sold" | "Restock" | "Return" | "Damaged",
+            type: resolvedTransactionType,
             createdBy: updaterName,
             updatedBy: updaterName,
             deletedBy: "",
@@ -389,7 +485,9 @@ export async function updateProduct(formData: FormData) {
 
 export async function deleteProduct(productId: string) {
   const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
+  if (!session) {
+    return { success: false, error: "Unauthorized" };
+  }
 
   try {
     const product = await db.items.findUnique({
@@ -400,6 +498,9 @@ export async function deleteProduct(productId: string) {
     if (!product) {
       return { success: false, error: "Product not found." };
     }
+
+    // Capture the image URL before deletion so we can remove the file after
+    const imageUrlToDelete = product.imageUrl;
 
     // Cascading delete manually to avoid foreign key violations
     await db.$transaction(async (tx) => {
@@ -421,6 +522,9 @@ export async function deleteProduct(productId: string) {
         where: { id: productId },
       });
     });
+
+    // Delete the product image file from disk (best-effort, won't fail the operation)
+    await deleteImageFile(imageUrlToDelete);
 
     revalidatePath("/dashboard/products");
     return { success: true, error: null };

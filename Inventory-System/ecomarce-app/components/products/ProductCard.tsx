@@ -7,9 +7,10 @@ interface ProductCardProps {
   product: any;
   onEdit: (product: any) => void;
   onDelete: (product: any) => void;
+  isAdmin?: boolean;
 }
 
-export default function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+export default function ProductCard({ product, onEdit, onDelete, isAdmin = false }: ProductCardProps) {
   const quantity = product.inventory?.quantity ?? 0;
   const minStock = product.minimumStock ?? 0;
   const buyPrice = product.inventory?.buyPrice ?? 0;
@@ -49,25 +50,38 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
             <span className="text-slate-500 block">Category</span>
             <span className="text-slate-350 font-medium">{product.category?.name}</span>
           </div>
-          <div>
-            <span className="text-slate-500 block text-right">Supplier</span>
-            <span className="text-slate-350 font-medium block text-right max-w-[120px] truncate">
-              {product.supplier?.name || "—"}
-            </span>
-          </div>
+          {isAdmin && (
+            <div>
+              <span className="text-slate-500 block text-right">Supplier</span>
+              <span className="text-slate-350 font-medium block text-right max-w-[120px] truncate">
+                {product.supplier?.name || "—"}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex justify-between text-sm">
-          <div>
-            <span className="text-slate-500 text-xs block">Prices</span>
-            <span className="text-slate-100 font-semibold">${sellPrice.toFixed(2)}</span>
-            <span className="text-[10px] text-slate-500 ml-1">cost: ${buyPrice.toFixed(2)}</span>
-          </div>
-          <div className="text-right">
-            <span className="text-slate-500 text-xs block">Stock</span>
-            <span className="text-slate-200 font-bold">{quantity}</span>
-            <span className="text-[10px] text-slate-500 ml-1">min: {minStock}</span>
-          </div>
+        <div className="flex justify-between items-center text-sm">
+          {isAdmin ? (
+            <>
+              <div>
+                <span className="text-slate-500 text-xs block">Prices</span>
+                <span className="text-slate-100 font-semibold">${sellPrice.toFixed(2)}</span>
+                <span className="text-[10px] text-slate-500 ml-1">cost: ${buyPrice.toFixed(2)}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-slate-500 text-xs block">Stock</span>
+                <span className="text-slate-200 font-bold">{quantity}</span>
+                <span className="text-[10px] text-slate-500 ml-1">min: {minStock}</span>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex justify-between items-center">
+              <span className="text-slate-500 text-xs font-medium">Available Quantity</span>
+              <span className="text-slate-100 font-bold text-sm">
+                {quantity} <span className="text-slate-500 font-normal text-xs">(min: {minStock})</span>
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

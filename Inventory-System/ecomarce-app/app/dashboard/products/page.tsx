@@ -1,4 +1,4 @@
-import { getProducts, getFormData } from "./actions";
+import { getProducts, getFormData, getStockAlerts } from "./actions";
 import { getSession } from "../../../lib/session";
 import { ensureDefaultCategoriesAndSuppliers } from "../../../lib/seed";
 import ProductsClientPage from "../../../components/products/ProductsClientPage";
@@ -34,6 +34,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   await ensureDefaultCategoriesAndSuppliers(userId);
 
   const { categories, suppliers } = await getFormData();
+  const stockAlerts = await getStockAlerts();
   const resolvedSearchParams = await searchParams;
 
   const search = resolvedSearchParams.q || "";
@@ -64,6 +65,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       currentPage={page}
       itemsPerPage={limit}
       isAdmin={role === "ADMIN"}
+      stockAlerts={stockAlerts}
     />
   );
 }

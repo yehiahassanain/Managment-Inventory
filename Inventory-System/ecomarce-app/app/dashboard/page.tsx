@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { db } from "../../lib/db";
 import { getSession } from "../../lib/session";
 import { User } from "../../prisma/generated/main/client";
@@ -16,6 +17,9 @@ const OWNER_EMAIL = "yehiahassanain@gmail.com";
 
 export default async function DashboardPage() {
   const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    redirect("/dashboard/products");
+  }
 
   let users: User[] = [];
   let errorMsg: string | null = null;

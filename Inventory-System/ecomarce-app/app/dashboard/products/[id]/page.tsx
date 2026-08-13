@@ -165,8 +165,8 @@ export default async function ProductDetailsPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Pricing & Stock Details Card (Only visible to Admin) */}
-          {isAdmin && (
+          {/* Pricing & Stock Details Card */}
+          {isAdmin ? (
             <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
               <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-800/60 pb-2">
                 Pricing &amp; Inventory
@@ -193,6 +193,29 @@ export default async function ProductDetailsPage({ params }: PageProps) {
                 </div>
                 <div>
                   <span className="text-slate-550 block text-xs">Minimum Stock Quantity</span>
+                  <span className="text-slate-350 font-medium text-base">{minStock} units</span>
+                </div>
+                <div>
+                  <span className="text-slate-550 block text-xs">Inventory Status</span>
+                  <div className="mt-1">
+                    <StatusBadge quantity={quantity} minimumStock={minStock} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+              <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 border-b border-slate-800/60 pb-2">
+                Stock &amp; Inventory Status
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
+                <div>
+                  <span className="text-slate-550 block text-xs">Current Available Quantity</span>
+                  <span className="text-slate-200 font-bold text-base">{quantity} units</span>
+                </div>
+                <div>
+                  <span className="text-slate-550 block text-xs">Minimum Stock Threshold</span>
                   <span className="text-slate-350 font-medium text-base">{minStock} units</span>
                 </div>
                 <div>

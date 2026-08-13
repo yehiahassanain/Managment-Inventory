@@ -9,7 +9,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_ROUTES.includes(pathname);
   const isProtected = pathname.startsWith(PROTECTED_PREFIX);
-  const isAdminOnly = pathname.startsWith(ADMIN_ONLY_PREFIX);
+  const isAnalytics = pathname.startsWith(ADMIN_ONLY_PREFIX);
+  const isUsersManagement = pathname === "/dashboard";
 
   const sessionCookie = request.cookies.get("session")?.value;
   const session = await decrypt(sessionCookie);
@@ -19,14 +20,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Redirect non-admin users away from admin-only pages
-  if (isAdminOnly && session && session.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Redirect non-admin users away from admin-only pages (Analytics and Users Management)
+  if (session && session.role !== "ADMIN") {
+    if (isAnalytics || isUsersManagement) {
+      return NextResponse.redirect(new URL("/dashboard/products", request.url));
+    }
   }
 
   // Redirect authenticated users away from the login page
   if (isPublic && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const destination = session.role === "ADMIN" ? "/dashboard" : "/dashboard/products";
+    return NextResponse.redirect(new URL(destination, request.url));
   }
 
   return NextResponse.next();

@@ -78,7 +78,7 @@ export default async function ProductsAuditPage() {
             <h2 className="text-base font-bold text-white">Audit Log</h2>
             <p className="text-slate-500 text-xs mt-0.5">Latest 20 inventory transactions — all types</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-800 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />Sold
             </span>
@@ -86,7 +86,10 @@ export default async function ProductsAuditPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block" />Restocked
             </span>
             <span className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-800 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />Other
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />Return
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-800 border border-slate-700/50 rounded-lg px-2.5 py-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 inline-block" />Damaged
             </span>
           </div>
         </div>

@@ -27,6 +27,7 @@ interface FilterPanelProps {
   onSortByChange: (val: string) => void;
   
   onClearFilters: () => void;
+  isAdmin?: boolean;
 }
 
 export default function FilterPanel({
@@ -41,12 +42,13 @@ export default function FilterPanel({
   sortBy,
   onSortByChange,
   onClearFilters,
+  isAdmin = false,
 }: FilterPanelProps) {
-  const hasActiveFilters = category !== "" || supplier !== "" || status !== "";
+  const hasActiveFilters = category !== "" || (isAdmin && supplier !== "") || status !== "";
 
   return (
     <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 mb-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+      <div className={`grid grid-cols-1 ${isAdmin ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-4 flex-1`}>
         {/* Category Filter */}
         <div>
           <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">
@@ -73,31 +75,33 @@ export default function FilterPanel({
           </div>
         </div>
 
-        {/* Supplier Filter */}
-        <div>
-          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">
-            Supplier
-          </label>
-          <div className="relative">
-            <select
-              value={supplier}
-              onChange={(e) => onSupplierChange(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800/60 border border-slate-700/50 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none"
-            >
-              <option value="">All Suppliers</option>
-              {suppliers.map((sup) => (
-                <option key={sup.id} value={sup.id}>
-                  {sup.name}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+        {/* Supplier Filter — only for admin */}
+        {isAdmin && (
+          <div>
+            <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1.5">
+              Supplier
+            </label>
+            <div className="relative">
+              <select
+                value={supplier}
+                onChange={(e) => onSupplierChange(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800/60 border border-slate-700/50 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all appearance-none"
+              >
+                <option value="">All Suppliers</option>
+                {suppliers.map((sup) => (
+                  <option key={sup.id} value={sup.id}>
+                    {sup.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Stock Status Filter */}
         <div>
@@ -140,10 +144,14 @@ export default function FilterPanel({
               <option value="name_desc">Name (Z - A)</option>
               <option value="quantity_asc">Quantity (Low - High)</option>
               <option value="quantity_desc">Quantity (High - Low)</option>
-              <option value="buyPrice_asc">Purchase Price (Low - High)</option>
-              <option value="buyPrice_desc">Purchase Price (High - Low)</option>
-              <option value="sellPrice_asc">Selling Price (Low - High)</option>
-              <option value="sellPrice_desc">Selling Price (High - Low)</option>
+              {isAdmin && (
+                <>
+                  <option value="buyPrice_asc">Purchase Price (Low - High)</option>
+                  <option value="buyPrice_desc">Purchase Price (High - Low)</option>
+                  <option value="sellPrice_asc">Selling Price (Low - High)</option>
+                  <option value="sellPrice_desc">Selling Price (High - Low)</option>
+                </>
+              )}
               <option value="created_desc">Created (Newest First)</option>
               <option value="created_asc">Created (Oldest First)</option>
             </select>

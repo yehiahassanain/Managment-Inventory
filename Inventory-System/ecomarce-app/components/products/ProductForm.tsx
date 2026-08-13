@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductImageUploader from "./ProductImageUploader";
 
 interface Category {
@@ -32,6 +32,7 @@ interface ProductFormProps {
   } | null;
   onSubmit: (formData: FormData) => Promise<{ success: boolean; error: string | null }>;
   onCancel: () => void;
+  isAdmin?: boolean;
 }
 
 export default function ProductForm({
@@ -40,6 +41,7 @@ export default function ProductForm({
   initialProduct,
   onSubmit,
   onCancel,
+  isAdmin = true,
 }: ProductFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -49,6 +51,14 @@ export default function ProductForm({
   const originalQty = initialProduct?.quantity ?? 0;
   const qtyDirection = currentQty > originalQty ? "increase" : currentQty < originalQty ? "decrease" : "same";
 
+  useEffect(() => {
+    if (qtyDirection === "decrease") {
+      setSelectedType("Sold");
+    } else if (qtyDirection === "increase" && selectedType === "Sold") {
+      setSelectedType(null);
+    }
+  }, [qtyDirection]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isPending) return;
@@ -57,21 +67,27 @@ export default function ProductForm({
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    // ─── Client-side Validation ──────────────────────────────────────────────
     const name = (formData.get("name") as string)?.trim();
-    const barcode = (formData.get("barcode") as string)?.trim();
-    const sku = (formData.get("sku") as string)?.trim();
     const categoryId = formData.get("categoryId") as string;
-    const supplierId = formData.get("supplierId") as string;
     
-    const buyPrice = parseFloat(formData.get("buyPrice") as string);
-    const sellPrice = parseFloat(formData.get("sellPrice") as string);
-    const quantity = parseInt(formData.get("quantity") as string, 10);
+    const rawBuyPrice = formData.get("buyPrice") as string;
+    const rawSellPrice = formData.get("sellPrice") as string;
+    const buyPrice = parseFloat(rawBuyPrice);
+    const sellPrice = parseFloat(rawSellPrice);
+    const rawQuantity = formData.get("quantity") as string;
+    const parsedQty = parseInt(rawQuantity, 10);
+    const quantity = (rawQuantity !== null && rawQuantity !== "" && !isNaN(parsedQty))
+      ? parsedQty
+      : (initialProduct?.quantity ?? 0);
     const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
-    const transactionType = formData.get("transactionType") as string;
+    const submittedTransactionType = formData.get("transactionType") as string;
+    const transactionType = qtyDirection === "decrease" ? "Sold" : submittedTransactionType;
+    if (qtyDirection === "decrease") {
+      formData.set("transactionType", "Sold");
+    }
 
-    if (initialProduct && !transactionType) {
-      setError("Please select a Transaction Type for this edit.");
+    if (initialProduct && qtyDirection === "increase" && !transactionType) {
+      setError("Please select a Reason for adding stock.");
       return;
     }
 
@@ -79,123 +95,114 @@ export default function ProductForm({
       setError("Product Name is required.");
       return;
     }
-    if (!barcode) {
-      setError("Barcode is required.");
-      return;
-    }
     if (!categoryId) {
       setError("Please select a Category.");
       return;
     }
-    if (isNaN(buyPrice) || buyPrice < 0) {
-      setError("Purchase Price must be 0 or a positive number.");
-      return;
-    }
-    if (isNaN(sellPrice) || sellPrice < 0) {
-      setError("Selling Price must be 0 or a positive number.");
-      return;
-    }
-    if (sellPrice < buyPrice) {
-      setError("Selling Price cannot be less than Purchase Price.");
-      return;
-    }
-    if (isNaN(quantity) || quantity < 0) {
-      setError("Initial/Current Quantity must be 0 or a positive integer.");
-      return;
+    if (isAdmin) {
+      if (isNaN(buyPrice) || buyPrice < 0) {
+        setError("Purchase Price must be 0 or a positive number.");
+        return;
+      }
+      if (isNaN(sellPrice) || sellPrice < 0) {
+        setError("Selling Price must be 0 or a positive number.");
+        return;
+      }
+      if (sellPrice < buyPrice) {
+        setError("Selling Price cannot be less than Purchase Price.");
+        return;
+      }
     }
     if (isNaN(minimumStock) || minimumStock < 0) {
-      setError("Minimum Stock must be 0 or a positive integer.");
+      setError("Minimum Stock must be 0 or greater.");
+      return;
+    }
+    if (!initialProduct && (isNaN(quantity) || quantity < 0)) {
+      setError("Initial Quantity must be 0 or greater.");
       return;
     }
 
-    // Alphanumeric checks for SKU and Barcode
-    if (sku && !/^[a-zA-Z0-9_-]+$/.test(sku)) {
-      setError("SKU can only contain alphanumeric characters, hyphens, and underscores.");
-      return;
-    }
-    if (!/^[a-zA-Z0-9]+$/.test(barcode)) {
-      setError("Barcode can only contain alphanumeric characters.");
-      return;
-    }
-
+    setIsPending(true);
     try {
-      setIsPending(true);
       const res = await onSubmit(formData);
       if (!res.success) {
-        setError(res.error || "An error occurred during submission.");
+        setError(res.error || "Something went wrong.");
       }
     } catch (err: any) {
-      console.error(err);
-      setError("An unexpected network error occurred.");
+      setError(err.message || "Failed to submit product.");
     } finally {
       setIsPending(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {error && (
-        <div className="flex items-center gap-2 p-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl">
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
           {error}
         </div>
       )}
 
-      {/* Hidden field for product ID if editing */}
       {initialProduct && (
         <input type="hidden" name="productId" value={initialProduct.id} />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Name */}
+      {/* Basic Info */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
             Product Name *
           </label>
           <input
             name="name"
-            type="text"
             required
             defaultValue={initialProduct?.name || ""}
-            placeholder="e.g. Wireless Mouse M330"
+            placeholder="e.g. Wireless Ergonomic Mouse"
             className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
           />
         </div>
 
-        {/* Barcode */}
         <div>
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Barcode / UPC *
+            SKU (Stock Keeping Unit)
+          </label>
+          <input
+            name="sku"
+            defaultValue={initialProduct?.sku || ""}
+            placeholder="e.g. ELEC-MOU-001"
+            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all uppercase"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+            Barcode / UPC
           </label>
           <input
             name="barcode"
-            type="text"
-            required
             defaultValue={initialProduct?.barcode || ""}
-            placeholder="e.g. 697018320491"
+            placeholder="Auto-generated if left blank"
+            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+            Description
+          </label>
+          <input
+            name="description"
+            defaultValue={initialProduct?.description || ""}
+            placeholder="Brief item summary"
             className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* SKU */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            SKU / Product Code
-          </label>
-          <input
-            name="sku"
-            type="text"
-            defaultValue={initialProduct?.sku || ""}
-            placeholder="e.g. TECH-MSE-330"
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
-
-        {/* Category */}
+      {/* Category & Supplier */}
+      <div className={`grid grid-cols-1 ${isAdmin ? "sm:grid-cols-2" : ""} gap-4`}>
         <div>
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
             Category *
@@ -213,90 +220,98 @@ export default function ProductForm({
             ))}
           </select>
         </div>
+
+        {/* Supplier — only visible to admin */}
+        {isAdmin ? (
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+              Supplier
+            </label>
+            <select
+              name="supplierId"
+              defaultValue={initialProduct?.supplierId || ""}
+              className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+            >
+              <option value="">Select a supplier</option>
+              {suppliers.map((sup) => (
+                <option key={sup.id} value={sup.id}>
+                  {sup.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <input type="hidden" name="supplierId" value={initialProduct?.supplierId || ""} />
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Supplier */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Supplier
-          </label>
-          <select
-            name="supplierId"
-            defaultValue={initialProduct?.supplierId || ""}
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          >
-            <option value="">Select a supplier</option>
-            {suppliers.map((sup) => (
-              <option key={sup.id} value={sup.id}>
-                {sup.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Image Uploader */}
-        <div>
-          <ProductImageUploader initialImageUrl={initialProduct?.imageUrl} />
-        </div>
+      <div>
+        <ProductImageUploader initialImageUrl={initialProduct?.imageUrl} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {/* Purchase Price */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Buy Price ($) *
-          </label>
-          <input
-            name="buyPrice"
-            type="number"
-            required
-            step="0.01"
-            min="0"
-            defaultValue={initialProduct?.buyPrice ?? ""}
-            placeholder="0.00"
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
+      <div className={`grid ${isAdmin ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-1 sm:grid-cols-2"} gap-4`}>
+        {/* Purchase & Sell Price (Admin Only) */}
+        {isAdmin ? (
+          <>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+                Buy Price ($) *
+              </label>
+              <input
+                name="buyPrice"
+                type="number"
+                required
+                step="0.01"
+                min="0"
+                defaultValue={initialProduct?.buyPrice ?? ""}
+                placeholder="0.00"
+                className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              />
+            </div>
 
-        {/* Selling Price */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Sell Price ($) *
-          </label>
-          <input
-            name="sellPrice"
-            type="number"
-            required
-            step="0.01"
-            min="0"
-            defaultValue={initialProduct?.sellPrice ?? ""}
-            placeholder="0.00"
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+                Sell Price ($) *
+              </label>
+              <input
+                name="sellPrice"
+                type="number"
+                required
+                step="0.01"
+                min="0"
+                defaultValue={initialProduct?.sellPrice ?? ""}
+                placeholder="0.00"
+                className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <input type="hidden" name="buyPrice" value={initialProduct?.buyPrice ?? 0} />
+            <input type="hidden" name="sellPrice" value={initialProduct?.sellPrice ?? 0} />
+          </>
+        )}
 
         {/* Initial Quantity */}
         <div>
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Quantity *
+            Quantity {initialProduct ? "" : "*"}
           </label>
           <input
             name="quantity"
             type="number"
-            required
+            required={!initialProduct}
             min="0"
             defaultValue={initialProduct?.quantity ?? ""}
             placeholder="0"
             onChange={(e) => {
               if (!initialProduct) return;
-              const newQty = parseInt(e.target.value, 10);
-              if (!isNaN(newQty)) {
-                const newDir = newQty > originalQty ? "increase" : newQty < originalQty ? "decrease" : "same";
-                const oldDir = currentQty > originalQty ? "increase" : currentQty < originalQty ? "decrease" : "same";
-                if (newDir !== oldDir) setSelectedType(null);
-                setCurrentQty(newQty);
-              }
+              const val = e.target.value;
+              const newQty = val !== "" && !isNaN(parseInt(val, 10)) ? parseInt(val, 10) : originalQty;
+              const newDir = newQty > originalQty ? "increase" : newQty < originalQty ? "decrease" : "same";
+              const oldDir = currentQty > originalQty ? "increase" : currentQty < originalQty ? "decrease" : "same";
+              if (newDir !== oldDir) setSelectedType(null);
+              setCurrentQty(newQty);
             }}
             className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
           />
@@ -323,19 +338,19 @@ export default function ProductForm({
       {initialProduct && qtyDirection !== "same" && (
         <div>
           <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Transaction Type *
+            {qtyDirection === "increase" ? "Reason for Stock Increase *" : "Reason for Stock Reduction"}
           </label>
           <p className="text-xs text-slate-500 mb-3">
             {qtyDirection === "increase"
-              ? "Quantity increased — why was stock added?"
-              : "Quantity decreased — why was stock reduced?"}
+              ? "Quantity increased — select the reason for adding stock:"
+              : "Quantity decreased — item was sold to a customer:"}
           </p>
-          <div className={`grid gap-3 ${qtyDirection === "increase" ? "grid-cols-3" : "grid-cols-1 max-w-[9rem]"}`}>
+          <div className={`grid gap-3 ${qtyDirection === "increase" ? "grid-cols-3" : "grid-cols-1 max-w-xs"}`}>
             {([
               {
                 value: "Restock",
                 label: "Restock",
-                description: "Add stock",
+                description: "Add to available stock",
                 showFor: "increase",
                 icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -363,7 +378,7 @@ export default function ProductForm({
               {
                 value: "Damaged",
                 label: "Damaged",
-                description: "Write-off",
+                description: "Unusable (no stock added)",
                 showFor: "increase",
                 icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -377,7 +392,7 @@ export default function ProductForm({
               {
                 value: "Sold",
                 label: "Sold",
-                description: "Item sold",
+                description: "Customer sale (logs revenue & profit)",
                 showFor: "decrease",
                 icon: (
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

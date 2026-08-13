@@ -10,7 +10,7 @@ import Pagination from "../ui/Pagination";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import EmptyState from "../ui/EmptyState";
 import ProductForm from "./ProductForm";
-import { createProduct, updateProduct, deleteProduct } from "../../app/dashboard/products/actions";
+import { createProduct, updateProduct, deleteProduct, StockAlertItem } from "../../app/dashboard/products/actions";
 
 interface Category {
   id: string;
@@ -31,6 +31,10 @@ interface ProductsClientPageProps {
   currentPage: number;
   itemsPerPage: number;
   isAdmin: boolean;
+  stockAlerts?: {
+    lowStockProducts: StockAlertItem[];
+    outOfStockProducts: StockAlertItem[];
+  };
 }
 
 export default function ProductsClientPage({
@@ -42,6 +46,7 @@ export default function ProductsClientPage({
   currentPage,
   itemsPerPage,
   isAdmin,
+  stockAlerts = { lowStockProducts: [], outOfStockProducts: [] },
 }: ProductsClientPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,15 +60,6 @@ export default function ProductsClientPage({
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
   const [isDeletePending, setIsDeletePending] = useState(false);
-
-  // Debounce search URL update
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      updateUrlParams({ q: searchValue, page: "1" });
-    }, 450);
-
-    return () => clearTimeout(handler);
-  }, [searchValue]);
 
   const updateUrlParams = (newParams: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -80,6 +76,15 @@ export default function ProductsClientPage({
     }
     router.push(`/dashboard/products?${params.toString()}`);
   };
+
+  // Debounce search URL update
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      updateUrlParams({ q: searchValue, page: "1" });
+    }, 450);
+
+    return () => clearTimeout(handler);
+  }, [searchValue]);
 
   const handleClearFilters = () => {
     setSearchValue("");
@@ -140,12 +145,152 @@ export default function ProductsClientPage({
         )}
       </div>
 
+      {/* ── Low Stock & Out of Stock Alert Sections ──────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Low Stock Alerts */}
+        <div className="bg-slate-900/50 backdrop-blur-md border border-amber-500/25 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                <h2 className="text-sm font-bold text-white tracking-tight">Low Stock Alerts</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                  {stockAlerts.lowStockProducts.length} items
+                </span>
+                {stockAlerts.lowStockProducts.length > 0 && (
+                  <button
+                    onClick={() => updateUrlParams({ status: "low_stock" })}
+                    className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Filter list
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {stockAlerts.lowStockProducts.length === 0 ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-center text-xs text-slate-500 font-medium">
+                  <span className="text-lg">✅</span> All products are well-stocked above minimum thresholds
+                </div>
+              ) : (
+                stockAlerts.lowStockProducts.slice(0, 5).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
+                        {p.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-200 truncate max-w-[180px]">{p.name}</p>
+                        <p className="text-[10px] text-slate-500">{p.categoryName}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-xs font-bold text-amber-400">{p.quantity} left</p>
+                      <p className="text-[10px] text-slate-500 font-mono">min: {p.minimumStock}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          {stockAlerts.lowStockProducts.length > 5 && (
+            <button
+              onClick={() => updateUrlParams({ status: "low_stock" })}
+              className="mt-3 text-[11px] font-semibold text-center text-amber-400/90 hover:text-amber-300 transition-colors w-full pt-2 border-t border-amber-500/10 cursor-pointer"
+            >
+              + {stockAlerts.lowStockProducts.length - 5} more low stock items — Click to view all
+            </button>
+          )}
+        </div>
+
+        {/* Out of Stock */}
+        <div className="bg-slate-900/50 backdrop-blur-md border border-rose-500/25 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse" />
+                <h2 className="text-sm font-bold text-white tracking-tight">Out of Stock</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full">
+                  {stockAlerts.outOfStockProducts.length} items
+                </span>
+                {stockAlerts.outOfStockProducts.length > 0 && (
+                  <button
+                    onClick={() => updateUrlParams({ status: "out_of_stock" })}
+                    className="text-[11px] font-semibold text-rose-400 hover:text-rose-300 underline underline-offset-2 transition-colors cursor-pointer"
+                  >
+                    Filter list
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {stockAlerts.outOfStockProducts.length === 0 ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-center text-xs text-slate-500 font-medium">
+                  <span className="text-lg">🎉</span> No out-of-stock items in inventory
+                </div>
+              ) : (
+                stockAlerts.outOfStockProducts.slice(0, 5).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl bg-rose-500/5 border border-rose-500/10 hover:border-rose-500/25 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-slate-800/80 border border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
+                        {p.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <svg className="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-slate-200 truncate max-w-[180px]">{p.name}</p>
+                        <p className="text-[10px] text-slate-500">{p.categoryName}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full shrink-0">
+                      0 left
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          {stockAlerts.outOfStockProducts.length > 5 && (
+            <button
+              onClick={() => updateUrlParams({ status: "out_of_stock" })}
+              className="mt-3 text-[11px] font-semibold text-center text-rose-400/90 hover:text-rose-300 transition-colors w-full pt-2 border-t border-rose-500/10 cursor-pointer"
+            >
+              + {stockAlerts.outOfStockProducts.length - 5} more out of stock items — Click to view all
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Search and View Controls */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <SearchBar
           value={searchValue}
           onChange={setSearchValue}
-          placeholder="Search products by name, SKU, or barcode..."
+          placeholder="Search products by name or SKU..."
         />
 
         <div className="flex items-center bg-slate-900/65 border border-slate-800 rounded-xl p-1 shrink-0">
@@ -191,6 +336,7 @@ export default function ProductsClientPage({
         sortBy={searchParams.get("sortBy") || "name_asc"}
         onSortByChange={(val) => updateUrlParams({ sortBy: val })}
         onClearFilters={handleClearFilters}
+        isAdmin={isAdmin}
       />
 
       {/* Products Display Container */}
@@ -226,6 +372,7 @@ export default function ProductsClientPage({
             products={initialProducts}
             onEdit={setEditingProduct}
             onDelete={setDeletingProduct}
+            isAdmin={isAdmin}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -235,6 +382,7 @@ export default function ProductsClientPage({
                 product={prod}
                 onEdit={setEditingProduct}
                 onDelete={setDeletingProduct}
+                isAdmin={isAdmin}
               />
             ))}
           </div>
@@ -264,6 +412,7 @@ export default function ProductsClientPage({
               suppliers={suppliers}
               onSubmit={handleCreateSubmit}
               onCancel={() => setIsAddOpen(false)}
+              isAdmin={isAdmin}
             />
           </div>
         </div>
@@ -297,6 +446,7 @@ export default function ProductsClientPage({
               }}
               onSubmit={handleUpdateSubmit}
               onCancel={() => setEditingProduct(null)}
+              isAdmin={isAdmin}
             />
           </div>
         </div>

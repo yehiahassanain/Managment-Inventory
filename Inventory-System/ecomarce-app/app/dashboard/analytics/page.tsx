@@ -136,40 +136,48 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         <SalesTrendChart data={trendData} activeMetric={chartMetric} />
       </section>
 
-      {/* ── Profit + Sales Reports ────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* ── Profit + Sales Reports (Separate Lines) ──────────────── */}
+      <div className="space-y-6">
 
         {/* Profit Report */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl space-y-5">
+          {/* Header: Title & Period Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-white">Profit Report</h2>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                Profit Report
+              </h2>
               <p className="text-slate-500 text-xs mt-0.5">Revenue minus cost of goods</p>
             </div>
             <PeriodTabs paramKey="profitPeriod" current={profitPeriod} />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-4">
-              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Profit</p>
-              <p className="text-2xl font-extrabold text-emerald-400">{fmt(profitReport.profit)}</p>
+
+          {/* Main Highlight Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Profit</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-emerald-400">{fmt(profitReport.profit)}</span>
             </div>
-            <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-xl p-4">
-              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Revenue</p>
-              <p className="text-2xl font-extrabold text-indigo-400">{fmt(profitReport.revenue)}</p>
+            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4">
+              <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider block mb-1">Revenue</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-indigo-400">{fmt(profitReport.revenue)}</span>
             </div>
           </div>
-          <div className="flex items-center gap-6 text-sm">
+
+          {/* Secondary Metrics on a New Line */}
+          <div className="flex items-center flex-wrap gap-6 sm:gap-12 pt-4 border-t border-slate-800/60">
             <div>
-              <p className="text-slate-600 text-xs">Orders</p>
-              <p className="font-bold text-slate-200">{fmtNum(profitReport.orders)}</p>
+              <p className="text-slate-500 text-xs font-medium">Orders</p>
+              <p className="text-base font-bold text-slate-100 mt-0.5">{fmtNum(profitReport.orders)}</p>
             </div>
             <div>
-              <p className="text-slate-600 text-xs">Units Sold</p>
-              <p className="font-bold text-slate-200">{fmtNum(profitReport.unitsSold)}</p>
+              <p className="text-slate-500 text-xs font-medium">Units Sold</p>
+              <p className="text-base font-bold text-slate-100 mt-0.5">{fmtNum(profitReport.unitsSold)}</p>
             </div>
             <div>
-              <p className="text-slate-600 text-xs">Margin</p>
-              <p className="font-bold text-slate-200">
+              <p className="text-slate-500 text-xs font-medium">Margin</p>
+              <p className="text-base font-bold text-emerald-400 mt-0.5">
                 {profitReport.revenue > 0
                   ? `${((profitReport.profit / profitReport.revenue) * 100).toFixed(1)}%`
                   : "—"}
@@ -179,37 +187,46 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </section>
 
         {/* Sales Report */}
-        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+        <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 shadow-xl space-y-5">
+          {/* Header: Title & Period Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-white">Sales Report</h2>
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-violet-400 inline-block" />
+                Sales Report
+              </h2>
               <p className="text-slate-500 text-xs mt-0.5">Units moved and order volume</p>
             </div>
             <PeriodTabs paramKey="salesPeriod" current={salesPeriod} />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-violet-500/5 border border-violet-500/15 rounded-xl p-4">
-              <p className="text-[10px] font-bold text-violet-600 uppercase tracking-widest mb-1">Units Sold</p>
-              <p className="text-2xl font-extrabold text-violet-400">{fmtNum(salesReport.unitsSold)}</p>
+
+          {/* Main Highlight Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+              <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider block mb-1">Units Sold</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-violet-400">{fmtNum(salesReport.unitsSold)}</span>
             </div>
-            <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4">
-              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Orders</p>
-              <p className="text-2xl font-extrabold text-amber-400">{fmtNum(salesReport.orders)}</p>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-1">Orders</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-amber-400">{fmtNum(salesReport.orders)}</span>
             </div>
           </div>
-          <div className="flex items-center gap-6 text-sm">
+
+          {/* Secondary Metrics on a New Line */}
+          <div className="flex items-center flex-wrap gap-6 sm:gap-12 pt-4 border-t border-slate-800/60">
             <div>
-              <p className="text-slate-600 text-xs">Total Revenue</p>
-              <p className="font-bold text-slate-200">{fmt(salesReport.revenue)}</p>
+              <p className="text-slate-500 text-xs font-medium">Total Revenue</p>
+              <p className="text-base font-bold text-slate-100 mt-0.5">{fmt(salesReport.revenue)}</p>
             </div>
             <div>
-              <p className="text-slate-600 text-xs">Avg. Order Size</p>
-              <p className="font-bold text-slate-200">
+              <p className="text-slate-500 text-xs font-medium">Avg. Order Size</p>
+              <p className="text-base font-bold text-slate-100 mt-0.5">
                 {salesReport.orders > 0 ? fmtNum(Math.round(salesReport.unitsSold / salesReport.orders)) : "—"} units
               </p>
             </div>
           </div>
         </section>
+
       </div>
 
       {/* ── Custom Date Range ─────────────────────────────────────── */}

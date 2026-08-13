@@ -7,22 +7,22 @@ interface ProductTableProps {
   products: any[];
   onEdit: (product: any) => void;
   onDelete: (product: any) => void;
+  isAdmin?: boolean;
 }
 
-export default function ProductTable({ products, onEdit, onDelete }: ProductTableProps) {
+export default function ProductTable({ products, onEdit, onDelete, isAdmin = false }: ProductTableProps) {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full text-left text-sm border-collapse">
         <thead>
-          <tr className="border-b border-slate-800/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
-            <th className="pb-3 pr-4">Product Info</th>
-            <th className="pb-3 px-4 hidden md:table-cell">Barcode</th>
-            <th className="pb-3 px-4">Category</th>
-            <th className="pb-3 px-4 hidden lg:table-cell">Supplier</th>
-            <th className="pb-3 px-4 text-right">Prices (Buy / Sell)</th>
-            <th className="pb-3 px-4 text-center">Stock</th>
-            <th className="pb-3 px-4">Status</th>
-            <th className="pb-3 pl-4 text-right">Actions</th>
+          <tr className="border-b border-slate-800/80 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            <th className="pb-3 pr-3 font-semibold">Product</th>
+            <th className="pb-3 px-3 font-semibold">Category</th>
+            {isAdmin && <th className="pb-3 px-3 font-semibold">Supplier</th>}
+            {isAdmin && <th className="pb-3 px-3 font-semibold text-right">Prices</th>}
+            <th className="pb-3 px-3 font-semibold text-center">Stock</th>
+            <th className="pb-3 px-3 font-semibold">Status</th>
+            <th className="pb-3 pl-3 font-semibold text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/50">
@@ -33,11 +33,11 @@ export default function ProductTable({ products, onEdit, onDelete }: ProductTabl
             const sellPrice = product.inventory?.sellPrice ?? 0;
 
             return (
-              <tr key={product.id} className="group hover:bg-slate-800/20 transition-colors">
-                {/* Product Info */}
-                <td className="py-4 pr-4">
+              <tr key={product.id} className="group hover:bg-slate-800/30 transition-colors">
+                {/* Product & SKU */}
+                <td className="py-3 pr-3 align-middle">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-slate-800/60 border border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
                       {product.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -46,63 +46,66 @@ export default function ProductTable({ products, onEdit, onDelete }: ProductTabl
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                         </svg>
                       )}
                     </div>
-                    <div>
-                      <div className="font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">
                         {product.name}
                       </div>
-                      <div className="text-xs text-slate-500 font-mono mt-0.5">
-                        {product.sku || "NO SKU"}
+                      <div className="text-[11px] text-slate-500 font-mono truncate">
+                        {product.sku ? `SKU: ${product.sku}` : "No SKU"}
                       </div>
                     </div>
                   </div>
                 </td>
 
-                {/* Barcode */}
-                <td className="py-4 px-4 hidden md:table-cell align-middle text-slate-400 font-mono text-xs">
-                  {product.barcode}
-                </td>
-
                 {/* Category */}
-                <td className="py-4 px-4 align-middle">
-                  <span className="text-xs font-medium text-slate-350 bg-slate-800/60 border border-slate-750 px-2 py-0.5 rounded-lg">
+                <td className="py-3 px-3 align-middle whitespace-nowrap">
+                  <span className="text-xs font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg">
                     {product.category?.name}
                   </span>
                 </td>
 
-                {/* Supplier */}
-                <td className="py-4 px-4 hidden lg:table-cell align-middle text-slate-400">
-                  {product.supplier?.name || <span className="text-slate-600 text-xs">—</span>}
+                {/* Supplier (Admin Only) */}
+                {isAdmin && (
+                  <td className="py-3 px-3 align-middle whitespace-nowrap text-slate-350 text-xs">
+                    {product.supplier?.name ? (
+                      <span className="truncate max-w-[130px] inline-block align-middle">{product.supplier.name}</span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
+                  </td>
+                )}
+
+                {/* Prices (Buy / Sell - Admin Only) */}
+                {isAdmin && (
+                  <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
+                    <div className="text-slate-100 font-semibold text-xs">${sellPrice.toFixed(2)}</div>
+                    <div className="text-[11px] text-slate-500">Buy: ${buyPrice.toFixed(2)}</div>
+                  </td>
+                )}
+
+                {/* Stock (Visible to all) */}
+                <td className="py-3 px-3 align-middle text-center whitespace-nowrap">
+                  <div className="text-slate-100 font-bold text-xs">{quantity}</div>
+                  <div className="text-[10px] text-slate-500">Min: {minStock}</div>
                 </td>
 
-                {/* Prices */}
-                <td className="py-4 px-4 align-middle text-right font-medium">
-                  <div className="text-slate-100">${sellPrice.toFixed(2)}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">cost: ${buyPrice.toFixed(2)}</div>
-                </td>
-
-                {/* Stock */}
-                <td className="py-4 px-4 align-middle text-center">
-                  <div className="text-slate-200 font-semibold">{quantity}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">min: {minStock}</div>
-                </td>
-
-                {/* Status */}
-                <td className="py-4 px-4 align-middle">
+                {/* Status (Visible to all) */}
+                <td className="py-3 px-3 align-middle whitespace-nowrap">
                   <StatusBadge quantity={quantity} minimumStock={minStock} />
                 </td>
 
                 {/* Actions */}
-                <td className="py-4 pl-4 text-right align-middle">
+                <td className="py-3 pl-3 align-middle text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1.5">
                     {/* View Details */}
                     <Link
                       href={`/dashboard/products/${product.id}`}
-                      className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-850 hover:border-slate-700 rounded-xl transition-all active:scale-90"
+                      className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-750 hover:border-slate-600 rounded-lg transition-all active:scale-95"
                       title="View Details"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,7 +117,7 @@ export default function ProductTable({ products, onEdit, onDelete }: ProductTabl
                     {/* Edit Product */}
                     <button
                       onClick={() => onEdit(product)}
-                      className="p-2 text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/35 rounded-xl transition-all active:scale-90 cursor-pointer"
+                      className="p-1.5 text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/35 rounded-lg transition-all active:scale-95 cursor-pointer"
                       title="Edit Product"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,7 +128,7 @@ export default function ProductTable({ products, onEdit, onDelete }: ProductTabl
                     {/* Delete Product */}
                     <button
                       onClick={() => onDelete(product)}
-                      className="p-2 text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/35 rounded-xl transition-all active:scale-90 cursor-pointer"
+                      className="p-1.5 text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/35 rounded-lg transition-all active:scale-95 cursor-pointer"
                       title="Delete Product"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

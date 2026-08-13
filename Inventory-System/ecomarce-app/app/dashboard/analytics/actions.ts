@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { db } from "../../../lib/db";
 import { getSession } from "../../../lib/session";
@@ -54,10 +54,10 @@ export interface AnalyticsSummary {
 
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
   await requireAdmin();
-  const [soldTransactions, inventoryItems, products, categories, suppliers] =
+  const [transactions, inventoryItems, products, categories, suppliers] =
     await Promise.all([
       db.inventory_Transaction.findMany({
-        where: { type: "Sold" },
+        where: { type: { in: ["Sold", "Return", "Damaged"] } },
         include: { inventory: true },
       }),
       db.inventory.findMany(),
@@ -66,16 +66,35 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
       db.supplier.count(),
     ]);
 
-  const totalRevenue = soldTransactions.reduce(
-    (sum, t) => sum + t.quantity * (t.inventory?.sellPrice ?? 0),
-    0
-  );
-  const totalProfit = soldTransactions.reduce(
-    (sum, t) =>
-      sum + t.quantity * ((t.inventory?.sellPrice ?? 0) - (t.inventory?.buyPrice ?? 0)),
-    0
-  );
-  const totalSales = soldTransactions.reduce((sum, t) => sum + t.quantity, 0);
+  let totalRevenue = 0;
+  let totalProfit = 0;
+  let totalSales = 0;
+  let totalOrders = 0;
+
+  for (const t of transactions) {
+    const sellPrice = t.inventory?.sellPrice ?? 0;
+    const buyPrice = t.inventory?.buyPrice ?? 0;
+
+    if (t.type === "Sold") {
+      totalRevenue += t.quantity * sellPrice;
+      totalProfit += t.quantity * (sellPrice - buyPrice);
+      totalSales += t.quantity;
+      totalOrders += 1;
+    } else if (t.type === "Return") {
+      totalRevenue -= t.quantity * sellPrice;
+      totalProfit -= t.quantity * (sellPrice - buyPrice);
+      totalSales -= t.quantity;
+      totalOrders -= 1;
+    } else if (t.type === "Damaged") {
+      totalRevenue -= t.quantity * sellPrice;
+      totalProfit -= t.quantity * buyPrice;
+    }
+  }
+
+  totalRevenue = Math.max(0, totalRevenue);
+  totalSales = Math.max(0, totalSales);
+  totalOrders = Math.max(0, totalOrders);
+
   const inventoryValue = inventoryItems.reduce(
     (sum, inv) => sum + inv.quantity * inv.buyPrice,
     0
@@ -85,7 +104,7 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     totalRevenue,
     totalProfit,
     totalSales,
-    totalOrders: soldTransactions.length,
+    totalOrders,
     inventoryValue,
     totalProducts: products,
     totalCategories: categories,
@@ -117,7 +136,9 @@ export async function getProfitReport(
     dateFilter = getDateRange(period);
   }
 
-  const where: Record<string, unknown> = { type: "Sold" };
+  const where: Record<string, unknown> = {
+    type: { in: ["Sold", "Return", "Damaged"] },
+  };
   if (dateFilter) where.createdAt = dateFilter;
 
   const transactions = await db.inventory_Transaction.findMany({
@@ -125,22 +146,37 @@ export async function getProfitReport(
     include: { inventory: true },
   });
 
-  const revenue = transactions.reduce(
-    (sum, t) => sum + t.quantity * (t.inventory?.sellPrice ?? 0),
-    0
-  );
-  const profit = transactions.reduce(
-    (sum, t) =>
-      sum + t.quantity * ((t.inventory?.sellPrice ?? 0) - (t.inventory?.buyPrice ?? 0)),
-    0
-  );
+  let revenue = 0;
+  let profit = 0;
+  let orders = 0;
+  let unitsSold = 0;
+
+  for (const t of transactions) {
+    const sellPrice = t.inventory?.sellPrice ?? 0;
+    const buyPrice = t.inventory?.buyPrice ?? 0;
+
+    if (t.type === "Sold") {
+      revenue += t.quantity * sellPrice;
+      profit += t.quantity * (sellPrice - buyPrice);
+      unitsSold += t.quantity;
+      orders += 1;
+    } else if (t.type === "Return") {
+      revenue -= t.quantity * sellPrice;
+      profit -= t.quantity * (sellPrice - buyPrice);
+      unitsSold -= t.quantity;
+      orders -= 1;
+    } else if (t.type === "Damaged") {
+      revenue -= t.quantity * sellPrice;
+      profit -= t.quantity * buyPrice;
+    }
+  }
 
   return {
     period,
-    revenue,
+    revenue: Math.max(0, revenue),
     profit,
-    orders: transactions.length,
-    unitsSold: transactions.reduce((sum, t) => sum + t.quantity, 0),
+    orders: Math.max(0, orders),
+    unitsSold: Math.max(0, unitsSold),
   };
 }
 
@@ -161,7 +197,7 @@ export async function getTopSellingProducts(limit = 10): Promise<TopProduct[]> {
   await requireAdmin();
 
   const transactions = await db.inventory_Transaction.findMany({
-    where: { type: "Sold" },
+    where: { type: { in: ["Sold", "Return", "Damaged"] } },
     include: {
       inventory: {
         include: { item: { include: { category: true } } },
@@ -177,31 +213,49 @@ export async function getTopSellingProducts(limit = 10): Promise<TopProduct[]> {
   for (const t of transactions) {
     const item = t.inventory?.item;
     if (!item) continue;
-    const rev = t.quantity * (t.inventory?.sellPrice ?? 0);
-    const prof = t.quantity * ((t.inventory?.sellPrice ?? 0) - (t.inventory?.buyPrice ?? 0));
+    const sellPrice = t.inventory?.sellPrice ?? 0;
+    const buyPrice = t.inventory?.buyPrice ?? 0;
+
+    let deltaQty = 0;
+    let deltaRev = 0;
+    let deltaProf = 0;
+
+    if (t.type === "Sold") {
+      deltaQty = t.quantity;
+      deltaRev = t.quantity * sellPrice;
+      deltaProf = t.quantity * (sellPrice - buyPrice);
+    } else if (t.type === "Return") {
+      deltaQty = -t.quantity;
+      deltaRev = -t.quantity * sellPrice;
+      deltaProf = -t.quantity * (sellPrice - buyPrice);
+    } else if (t.type === "Damaged") {
+      deltaRev = -t.quantity * sellPrice;
+      deltaProf = -t.quantity * buyPrice;
+    }
+
     const existing = map.get(item.id);
     if (existing) {
-      existing.quantitySold += t.quantity;
-      existing.revenue += rev;
-      existing.profit += prof;
+      existing.quantitySold += deltaQty;
+      existing.revenue += deltaRev;
+      existing.profit += deltaProf;
     } else {
-      map.set(item.id, { item, quantitySold: t.quantity, revenue: rev, profit: prof });
+      map.set(item.id, { item, quantitySold: deltaQty, revenue: deltaRev, profit: deltaProf });
     }
   }
 
   return Array.from(map.values())
-    .sort((a, b) => b.quantitySold - a.quantitySold)
-    .slice(0, limit)
     .map(({ item, quantitySold, revenue, profit }) => ({
       id: item.id,
       name: item.name,
       sku: item.sku,
       imageUrl: item.imageUrl,
       categoryName: item.category?.name ?? "—",
-      quantitySold,
-      revenue,
+      quantitySold: Math.max(0, quantitySold),
+      revenue: Math.max(0, revenue),
       profit,
-    }));
+    }))
+    .sort((a, b) => b.quantitySold - a.quantitySold)
+    .slice(0, limit);
 }
 
 // ─── Inventory Overview ───────────────────────────────────────────────────────
@@ -278,7 +332,7 @@ export async function getSalesByCategory(): Promise<CategorySales[]> {
   await requireAdmin();
 
   const transactions = await db.inventory_Transaction.findMany({
-    where: { type: "Sold" },
+    where: { type: { in: ["Sold", "Return", "Damaged"] } },
     include: {
       inventory: {
         include: { item: { include: { category: true } } },
@@ -291,28 +345,50 @@ export async function getSalesByCategory(): Promise<CategorySales[]> {
   for (const t of transactions) {
     const category = t.inventory?.item?.category;
     if (!category) continue;
-    const rev = t.quantity * (t.inventory?.sellPrice ?? 0);
-    const prof = t.quantity * ((t.inventory?.sellPrice ?? 0) - (t.inventory?.buyPrice ?? 0));
+    const sellPrice = t.inventory?.sellPrice ?? 0;
+    const buyPrice = t.inventory?.buyPrice ?? 0;
+
+    let deltaUnits = 0;
+    let deltaRev = 0;
+    let deltaProf = 0;
+
+    if (t.type === "Sold") {
+      deltaUnits = t.quantity;
+      deltaRev = t.quantity * sellPrice;
+      deltaProf = t.quantity * (sellPrice - buyPrice);
+    } else if (t.type === "Return") {
+      deltaUnits = -t.quantity;
+      deltaRev = -t.quantity * sellPrice;
+      deltaProf = -t.quantity * (sellPrice - buyPrice);
+    } else if (t.type === "Damaged") {
+      deltaRev = -t.quantity * sellPrice;
+      deltaProf = -t.quantity * buyPrice;
+    }
+
     const existing = map.get(category.id);
     if (existing) {
-      existing.unitsSold += t.quantity;
-      existing.revenue += rev;
-      existing.profit += prof;
+      existing.unitsSold += deltaUnits;
+      existing.revenue += deltaRev;
+      existing.profit += deltaProf;
     } else {
-      map.set(category.id, { name: category.name, unitsSold: t.quantity, revenue: rev, profit: prof });
+      map.set(category.id, { name: category.name, unitsSold: deltaUnits, revenue: deltaRev, profit: deltaProf });
     }
   }
 
-  const totalRevenue = Array.from(map.values()).reduce((sum, c) => sum + c.revenue, 0);
+  const sanitizedCategories = Array.from(map.entries()).map(([categoryId, data]) => ({
+    categoryId,
+    categoryName: data.name,
+    unitsSold: Math.max(0, data.unitsSold),
+    revenue: Math.max(0, data.revenue),
+    profit: data.profit,
+  }));
 
-  return Array.from(map.entries())
-    .map(([categoryId, data]) => ({
-      categoryId,
-      categoryName: data.name,
-      unitsSold: data.unitsSold,
-      revenue: data.revenue,
-      profit: data.profit,
-      share: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
+  const totalRevenue = sanitizedCategories.reduce((sum, c) => sum + c.revenue, 0);
+
+  return sanitizedCategories
+    .map((c) => ({
+      ...c,
+      share: totalRevenue > 0 ? (c.revenue / totalRevenue) * 100 : 0,
     }))
     .sort((a, b) => b.revenue - a.revenue);
 }
@@ -334,7 +410,10 @@ export async function getSalesTrend(days = 30): Promise<TrendPoint[]> {
   since.setHours(0, 0, 0, 0);
 
   const transactions = await db.inventory_Transaction.findMany({
-    where: { type: "Sold", createdAt: { gte: since } },
+    where: {
+      type: { in: ["Sold", "Return", "Damaged"] },
+      createdAt: { gte: since },
+    },
     include: { inventory: true },
     orderBy: { createdAt: "asc" },
   });
@@ -351,14 +430,30 @@ export async function getSalesTrend(days = 30): Promise<TrendPoint[]> {
     const key = t.createdAt.toISOString().slice(0, 10);
     const entry = map.get(key);
     if (!entry) continue;
-    const rev = t.quantity * (t.inventory?.sellPrice ?? 0);
-    const prof = t.quantity * ((t.inventory?.sellPrice ?? 0) - (t.inventory?.buyPrice ?? 0));
-    entry.revenue += rev;
-    entry.profit += prof;
-    entry.unitsSold += t.quantity;
+
+    const sellPrice = t.inventory?.sellPrice ?? 0;
+    const buyPrice = t.inventory?.buyPrice ?? 0;
+
+    if (t.type === "Sold") {
+      entry.revenue += t.quantity * sellPrice;
+      entry.profit += t.quantity * (sellPrice - buyPrice);
+      entry.unitsSold += t.quantity;
+    } else if (t.type === "Return") {
+      entry.revenue -= t.quantity * sellPrice;
+      entry.profit -= t.quantity * (sellPrice - buyPrice);
+      entry.unitsSold -= t.quantity;
+    } else if (t.type === "Damaged") {
+      entry.revenue -= t.quantity * sellPrice;
+      entry.profit -= t.quantity * buyPrice;
+    }
   }
 
-  return Array.from(map.entries()).map(([date, data]) => ({ date, ...data }));
+  return Array.from(map.entries()).map(([date, data]) => ({
+    date,
+    revenue: Math.max(0, data.revenue),
+    profit: data.profit,
+    unitsSold: Math.max(0, data.unitsSold),
+  }));
 }
 
 // ─── Recent Transactions ──────────────────────────────────────────────────────
