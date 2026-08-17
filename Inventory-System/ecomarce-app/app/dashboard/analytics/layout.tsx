@@ -9,7 +9,7 @@ export default async function AnalyticsLayout({
 }) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
-    redirect("/dashboard");
+    redirect("/dashboard/products");
   }
 
   return (

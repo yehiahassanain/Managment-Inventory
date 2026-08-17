@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchBar from "../ui/SearchBar";
 import FilterPanel from "./FilterPanel";
@@ -10,7 +10,13 @@ import Pagination from "../ui/Pagination";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import EmptyState from "../ui/EmptyState";
 import ProductForm from "./ProductForm";
-import { createProduct, updateProduct, deleteProduct, StockAlertItem } from "../../app/dashboard/products/actions";
+import {
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  StockAlertItem,
+  ProductItem,
+} from "../../app/dashboard/products/actions";
 
 interface Category {
   id: string;
@@ -23,7 +29,7 @@ interface Supplier {
 }
 
 interface ProductsClientPageProps {
-  initialProducts: any[];
+  initialProducts: ProductItem[];
   categories: Category[];
   suppliers: Supplier[];
   totalPages: number;
@@ -57,34 +63,40 @@ export default function ProductsClientPage({
 
   // Modal states
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
-  const [deletingProduct, setDeletingProduct] = useState<any | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<ProductItem | null>(null);
   const [isDeletePending, setIsDeletePending] = useState(false);
 
-  const updateUrlParams = (newParams: Record<string, string>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(newParams)) {
-      if (value === "") {
-        params.delete(key);
-      } else {
-        params.set(key, value);
+  const updateUrlParams = useCallback(
+    (newParams: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(newParams)) {
+        if (value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
       }
-    }
-    // If not explicitly setting a page, reset to page 1 on filter changes
-    if (!newParams.page && params.get("page")) {
-      params.set("page", "1");
-    }
-    router.push(`/dashboard/products?${params.toString()}`);
-  };
+      // If not explicitly setting a page, reset to page 1 on filter changes
+      if (!newParams.page && params.get("page")) {
+        params.set("page", "1");
+      }
+      router.push(`/dashboard/products?${params.toString()}`);
+    },
+    [router, searchParams]
+  );
 
   // Debounce search URL update
   useEffect(() => {
+    const currentQ = searchParams.get("q") || "";
+    if (searchValue === currentQ) return;
+
     const handler = setTimeout(() => {
       updateUrlParams({ q: searchValue, page: "1" });
     }, 450);
 
     return () => clearTimeout(handler);
-  }, [searchValue]);
+  }, [searchValue, searchParams, updateUrlParams]);
 
   const handleClearFilters = () => {
     setSearchValue("");
@@ -299,7 +311,7 @@ export default function ProductsClientPage({
             className={`p-1.5 rounded-lg transition-all ${
               viewMode === "table"
                 ? "bg-slate-800 text-indigo-400 shadow-sm"
-                : "text-slate-550 hover:text-slate-300"
+                : "text-slate-500 hover:text-slate-300"
             }`}
             title="List View"
           >
@@ -312,7 +324,7 @@ export default function ProductsClientPage({
             className={`p-1.5 rounded-lg transition-all ${
               viewMode === "grid"
                 ? "bg-slate-800 text-indigo-400 shadow-sm"
-                : "text-slate-550 hover:text-slate-300"
+                : "text-slate-500 hover:text-slate-300"
             }`}
             title="Grid View"
           >
@@ -360,7 +372,7 @@ export default function ProductsClientPage({
               ) : isAdmin ? (
                 <button
                   onClick={() => setIsAddOpen(true)}
-                  className="px-4 py-2 bg-indigo-650 hover:bg-indigo-600 text-white border border-indigo-500/30 rounded-xl text-sm font-semibold transition-all shadow-md"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-500/30 rounded-xl text-sm font-semibold transition-all shadow-md"
                 >
                   Create Product
                 </button>

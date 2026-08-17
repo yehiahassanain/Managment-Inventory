@@ -75,7 +75,7 @@ export default async function DashboardPage() {
               </svg>
             </div>
             <p className="text-slate-400 text-sm font-medium">Access Restricted</p>
-            <p className="text-slate-655 text-xs mt-1">Only the system owner can add new users.</p>
+            <p className="text-slate-500 text-xs mt-1">Only the system owner can add new users.</p>
           </section>
         )}
 

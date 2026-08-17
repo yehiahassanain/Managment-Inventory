@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ProductImageUploader from "./ProductImageUploader";
 
 interface Category {
@@ -50,14 +50,7 @@ export default function ProductForm({
 
   const originalQty = initialProduct?.quantity ?? 0;
   const qtyDirection = currentQty > originalQty ? "increase" : currentQty < originalQty ? "decrease" : "same";
-
-  useEffect(() => {
-    if (qtyDirection === "decrease") {
-      setSelectedType("Sold");
-    } else if (qtyDirection === "increase" && selectedType === "Sold") {
-      setSelectedType(null);
-    }
-  }, [qtyDirection]);
+  const effectiveSelectedType = qtyDirection === "decrease" ? "Sold" : selectedType;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -128,8 +121,8 @@ export default function ProductForm({
       if (!res.success) {
         setError(res.error || "Something went wrong.");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to submit product.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to submit product.");
     } finally {
       setIsPending(false);
     }
@@ -406,7 +399,7 @@ export default function ProductForm({
             ] as const)
               .filter(({ showFor }) => showFor === qtyDirection)
               .map(({ value, label, description, icon, selectedBg, selectedBorder, selectedText }) => {
-                const isSelected = selectedType === value;
+                const isSelected = effectiveSelectedType === value;
                 return (
                   <label
                     key={value}
@@ -459,7 +452,7 @@ export default function ProductForm({
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-350 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-850 hover:border-slate-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>

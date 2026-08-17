@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import StatusBadge from "./StatusBadge";
+import { ProductItem } from "../../app/dashboard/products/actions";
 
 interface ProductTableProps {
-  products: any[];
-  onEdit: (product: any) => void;
-  onDelete: (product: any) => void;
+  products: ProductItem[];
+  onEdit: (product: ProductItem) => void;
+  onDelete: (product: ProductItem) => void;
   isAdmin?: boolean;
 }
 
@@ -71,7 +72,7 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
 
                 {/* Supplier (Admin Only) */}
                 {isAdmin && (
-                  <td className="py-3 px-3 align-middle whitespace-nowrap text-slate-350 text-xs">
+                  <td className="py-3 px-3 align-middle whitespace-nowrap text-slate-400 text-xs">
                     {product.supplier?.name ? (
                       <span className="truncate max-w-[130px] inline-block align-middle">{product.supplier.name}</span>
                     ) : (
@@ -105,7 +106,7 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
                     {/* View Details */}
                     <Link
                       href={`/dashboard/products/${product.id}`}
-                      className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-750 hover:border-slate-600 rounded-lg transition-all active:scale-95"
+                      className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 hover:border-slate-600 rounded-lg transition-all active:scale-95"
                       title="View Details"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

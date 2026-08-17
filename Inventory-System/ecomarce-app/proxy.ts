@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decrypt } from "./lib/session";
+import { decrypt } from "./lib/jwt";
 
 const PUBLIC_ROUTES = ["/login"];
 const PROTECTED_PREFIX = "/dashboard";
 const ADMIN_ONLY_PREFIX = "/dashboard/analytics";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_ROUTES.includes(pathname);
   const isProtected = pathname.startsWith(PROTECTED_PREFIX);

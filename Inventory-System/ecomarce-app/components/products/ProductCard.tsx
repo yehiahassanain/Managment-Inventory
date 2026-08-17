@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import StatusBadge from "./StatusBadge";
+import { ProductItem } from "../../app/dashboard/products/actions";
 
 interface ProductCardProps {
-  product: any;
-  onEdit: (product: any) => void;
-  onDelete: (product: any) => void;
+  product: ProductItem;
+  onEdit: (product: ProductItem) => void;
+  onDelete: (product: ProductItem) => void;
   isAdmin?: boolean;
 }
 

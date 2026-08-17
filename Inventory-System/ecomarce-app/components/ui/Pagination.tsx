@@ -49,7 +49,7 @@ export default function Pagination({
             className={`w-9 h-9 rounded-lg text-sm font-medium border transition-all ${
               currentPage === page
                 ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20"
-                : "bg-slate-800/20 hover:bg-slate-800/60 border-slate-750 text-slate-400 hover:text-slate-200"
+                : "bg-slate-800/20 hover:bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200"
             }`}
           >
             {page}

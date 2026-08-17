@@ -41,9 +41,9 @@ async function deleteImageFile(imageUrl: string | null | undefined): Promise<voi
     const filename = path.basename(imageUrl);
     const filePath = path.join(process.cwd(), "public", "uploads", filename);
     await unlink(filePath);
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If the file doesn't exist (ENOENT), silently skip — otherwise log it
-    if (error?.code !== "ENOENT") {
+    if ((error as { code?: string })?.code !== "ENOENT") {
       console.error("Error deleting image file:", error);
     }
   }
@@ -66,6 +66,27 @@ export async function getFormData() {
   });
 
   return { categories, suppliers };
+}
+
+export interface ProductItem {
+  id: string;
+  name: string;
+  sku: string | null;
+  barcode: string;
+  imageUrl: string | null;
+  description: string;
+  minimumStock: number;
+  categoryId: string;
+  supplierId: string | null;
+  createdOn?: Date;
+  category?: { id: string; name: string } | null;
+  supplier?: { id: string; name: string } | null;
+  inventory?: {
+    id?: string;
+    buyPrice: number;
+    sellPrice: number;
+    quantity: number;
+  } | null;
 }
 
 export interface GetProductsParams {
@@ -92,7 +113,7 @@ export async function getProducts(params: GetProductsParams) {
   });
 
   // Filter in-memory for computed properties and cross-table conditions
-  let filteredItems = items.filter((item) => {
+  const filteredItems = items.filter((item) => {
     // 1. Search filter (name, SKU, barcode)
     if (params.search) {
       const q = params.search.toLowerCase();
@@ -328,9 +349,12 @@ export async function createProduct(formData: FormData) {
 
     revalidatePath("/dashboard/products");
     return { success: true, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create product error:", error);
-    return { success: false, error: error.message || "Failed to create product." };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create product.",
+    };
   }
 }
 
@@ -531,9 +555,12 @@ export async function updateProduct(formData: FormData) {
     revalidatePath("/dashboard/products");
     revalidatePath(`/dashboard/products/${productId}`);
     return { success: true, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update product error:", error);
-    return { success: false, error: error.message || "Failed to update product." };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update product.",
+    };
   }
 }
 
@@ -582,8 +609,11 @@ export async function deleteProduct(productId: string) {
 
     revalidatePath("/dashboard/products");
     return { success: true, error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Delete product error:", error);
-    return { success: false, error: error.message || "Failed to delete product." };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete product.",
+    };
   }
 }
