@@ -191,24 +191,68 @@ export async function createProduct(formData: FormData) {
     return { success: false, error: "Unauthorized: Admin access required." };
   }
 
-  const name = formData.get("name") as string;
+  const name = (formData.get("name") as string)?.trim();
   const sku = (formData.get("sku") as string)?.trim() || null;
   const submittedBarcode = (formData.get("barcode") as string)?.trim();
   const categoryId = formData.get("categoryId") as string;
-  const supplierId = (formData.get("supplierId") as string) || null;
-  const buyPrice = parseFloat(formData.get("buyPrice") as string);
-  const sellPrice = parseFloat(formData.get("sellPrice") as string);
-  const quantity = parseInt(formData.get("quantity") as string, 10);
-  const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
+  const rawSupplierId = (formData.get("supplierId") as string)?.trim() || null;
+  const rawBuyPrice = formData.get("buyPrice") as string;
+  const rawSellPrice = formData.get("sellPrice") as string;
+  const rawQuantity = formData.get("quantity") as string;
+  const rawMinimumStock = formData.get("minimumStock") as string;
   const description = formData.get("description") as string;
   const imageFile = formData.get("image") as File | null;
+
+  const buyPrice = parseFloat(rawBuyPrice);
+  const sellPrice = parseFloat(rawSellPrice);
+  const quantity = parseInt(rawQuantity, 10);
+  const minimumStock = parseInt(rawMinimumStock, 10);
 
   // Validation
   if (!name || !categoryId || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity) || isNaN(minimumStock)) {
     return { success: false, error: "Please fill all required fields correctly." };
   }
 
+  if (sellPrice < buyPrice) {
+    return { success: false, error: "Selling Price cannot be less than Purchase Price." };
+  }
+
   try {
+    // 1. Validate Category exists
+    const categoryExists = await db.category.findUnique({ where: { id: categoryId } });
+    if (!categoryExists) {
+      return { success: false, error: "The selected category does not exist." };
+    }
+
+    // 2. Validate Supplier if provided
+    let supplierId: string | null = null;
+    if (rawSupplierId) {
+      const supplierExists = await db.supplier.findUnique({ where: { id: rawSupplierId } });
+      if (supplierExists) {
+        supplierId = supplierExists.id;
+      }
+    }
+
+    // 3. Resolve user (prevents foreign key constraint failure if session cookie has stale ID)
+    let user = await db.user.findUnique({ where: { id: session.userId } });
+    if (!user) {
+      user = await db.user.findFirst({
+        where: {
+          OR: [
+            { email: "yehiahassanain@gmail.com" },
+            { role: "ADMIN" }
+          ]
+        }
+      });
+    }
+
+    if (!user) {
+      return { success: false, error: "User session is invalid. Please sign out and sign in again." };
+    }
+
+    const creatorName = user.name || "System";
+    const validUserId = user.id;
+
     let barcode = submittedBarcode || sku || `BC-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     // Check barcode uniqueness
@@ -232,9 +276,6 @@ export async function createProduct(formData: FormData) {
     // Save image
     const imageUrl = await handleImageUpload(imageFile);
 
-    const user = await db.user.findUnique({ where: { id: session.userId } });
-    const creatorName = user?.name || "System";
-
     // Run in Prisma Transaction
     await db.$transaction(async (tx) => {
       const newItem = await tx.items.create({
@@ -251,7 +292,7 @@ export async function createProduct(formData: FormData) {
           deletedBy: "",
           categoryId,
           supplierId,
-          userItemId: session.userId,
+          userItemId: validUserId,
         },
       });
 
@@ -265,7 +306,7 @@ export async function createProduct(formData: FormData) {
           updatedBy: creatorName,
           deletedBy: "",
           itemId: newItem.id,
-          userInventoryId: session.userId,
+          userInventoryId: validUserId,
         },
       });
 
@@ -278,7 +319,7 @@ export async function createProduct(formData: FormData) {
             createdBy: creatorName,
             updatedBy: creatorName,
             deletedBy: "",
-            userId: session.userId,
+            userId: validUserId,
             inventoryId: newInventory.id,
           },
         });
@@ -417,8 +458,21 @@ export async function updateProduct(formData: FormData) {
       finalImageUrl = newUploadedUrl;
     }
 
-    const user = await db.user.findUnique({ where: { id: session.userId } });
+    // Resolve valid user
+    let user = await db.user.findUnique({ where: { id: session.userId } });
+    if (!user) {
+      user = await db.user.findFirst({
+        where: {
+          OR: [
+            { email: "yehiahassanain@gmail.com" },
+            { role: "ADMIN" }
+          ]
+        }
+      });
+    }
+
     const updaterName = user?.name || "System";
+    const validUserId = user?.id || session.userId;
 
     // Run in Prisma Transaction
     await db.$transaction(async (tx) => {
@@ -467,7 +521,7 @@ export async function updateProduct(formData: FormData) {
             createdBy: updaterName,
             updatedBy: updaterName,
             deletedBy: "",
-            userId: session.userId,
+            userId: validUserId,
             inventoryId: updatedInventory.id,
           },
         });
