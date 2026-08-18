@@ -4,7 +4,14 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { logout } from "./actions";
 
-export default function SidebarNav({ role, email }: { role: string; email: string }) {
+interface SidebarNavProps {
+  role: string;
+  email: string;
+  name?: string;
+  pic?: string | null;
+}
+
+export default function SidebarNav({ role, email, name, pic }: SidebarNavProps) {
   const pathname = usePathname();
 
   const navLinks = [
@@ -57,14 +64,18 @@ export default function SidebarNav({ role, email }: { role: string; email: strin
       <aside className="hidden md:flex flex-col w-64 bg-slate-900/60 backdrop-blur-md border-r border-slate-800/80 p-6 z-10 shrink-0">
         {/* Logo and Brand */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/25" aria-hidden="true">
-            <svg className="w-5 h-5 text-white" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+          <div className="h-10 px-2.5 rounded-xl bg-white/95 border border-slate-700/50 flex items-center justify-center shadow-lg shrink-0">
+            <img
+              src="/uploads/Logo.png"
+              alt="Power Fitness"
+              className="h-7 w-auto object-contain"
+            />
           </div>
-          <span className="text-lg font-bold tracking-tight text-white">
-            {role === "ADMIN" ? "EIMS Admin" : "EIMS Inventory"}
-          </span>
+          <div>
+            <span className="text-base font-bold tracking-tight text-white block leading-tight">
+              Power Fitness
+            </span>
+          </div>
         </div>
 
         {/* Navigation Menu */}
@@ -90,17 +101,38 @@ export default function SidebarNav({ role, email }: { role: string; email: strin
         </nav>
 
         {/* User Profile / Logout */}
-        <div className="border-t border-slate-800/60 pt-6 mt-auto">
-          <div className="mb-4">
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Signed in as</div>
-            <div className="text-xs font-semibold text-slate-200 truncate mt-0.5" title={email}>
-              {email}
+        <div className="border-t border-slate-800/60 pt-5 mt-auto">
+          <div className="flex items-center gap-3 mb-4 p-2.5 rounded-xl bg-slate-800/40 border border-slate-800/70">
+            {/* User Avatar / Pic retrieved from DB */}
+            <div className="relative shrink-0">
+              {pic ? (
+                <img
+                  src={pic}
+                  alt={name || email}
+                  className="w-10 h-10 rounded-full object-cover border border-indigo-500/40 shadow-md ring-2 ring-indigo-500/20"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-indigo-500/20">
+                  {(name || email || "U").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-slate-900" title="Online" />
             </div>
-            {role === "ADMIN" && (
-              <span className="inline-block text-[9px] font-bold px-2 py-0.5 rounded-full mt-1.5 bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                ADMIN
-              </span>
-            )}
+
+            {/* User Info */}
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-slate-100 truncate leading-tight" title={name || email}>
+                {name || email.split("@")[0]}
+              </div>
+              <div className="text-[11px] text-slate-400 truncate mt-0.5" title={email}>
+                {email}
+              </div>
+              {role === "ADMIN" && (
+                <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-full mt-1 bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                  ADMIN
+                </span>
+              )}
+            </div>
           </div>
 
           <form action={logout}>
@@ -121,12 +153,14 @@ export default function SidebarNav({ role, email }: { role: string; email: strin
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md" aria-hidden="true">
-            <svg className="w-4 h-4 text-white" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+          <div className="h-8 px-2 rounded-lg bg-white/95 border border-slate-700/50 flex items-center justify-center shadow-md shrink-0">
+            <img
+              src="/uploads/Logo.png"
+              alt="Power Fitness"
+              className="h-5 w-auto object-contain"
+            />
           </div>
-          <span className="text-sm font-bold text-white">EIMS</span>
+          <span className="text-sm font-bold text-white">Power Fitness</span>
         </div>
 
         <nav aria-label="Mobile navigation" className="flex items-center gap-3">
@@ -143,6 +177,20 @@ export default function SidebarNav({ role, email }: { role: string; email: strin
               </Link>
             );
           })}
+          {/* User pic on mobile */}
+          <div className="shrink-0">
+            {pic ? (
+              <img
+                src={pic}
+                alt={name || email}
+                className="w-7 h-7 rounded-full object-cover border border-indigo-500/30"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
+                {(name || email || "U").charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
           <form action={logout}>
             <button
               type="submit"

@@ -5,7 +5,7 @@ import { getStatusAnalysis } from "./actions";
 import StatusAnalysisClient from "../../../../components/analytics/StatusAnalysisClient";
 
 export const metadata: Metadata = {
-  title: "Product Status Analysis — Analytics",
+  title: "Power Fitness",
   description: "Admin Analysis Section: Filter and inspect Sold, Returned, Damaged, and Restocked products.",
 };
 

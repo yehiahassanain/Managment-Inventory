@@ -72,6 +72,16 @@ export default function UserForm() {
         </select>
       </div>
 
+      <div>
+        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">Profile Picture (Optional)</label>
+        <input
+          name="pic"
+          type="file"
+          accept="image/*"
+          className="w-full px-4 py-2.5 bg-slate-800/60 border border-slate-700/60 rounded-xl text-xs text-slate-300 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/60 transition-all"
+        />
+      </div>
+
       <button
         id="create-user-btn"
         type="submit"

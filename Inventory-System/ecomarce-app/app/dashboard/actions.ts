@@ -4,6 +4,7 @@ import { db } from "../../lib/db";
 import { createSession, deleteSession } from "../../lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
 // ─── Auth Actions ────────────────────────────────────────────────────────────
 
@@ -22,7 +23,17 @@ export async function login(prevState: LoginState, formData: FormData): Promise<
   try {
     const user = await db.user.findUnique({ where: { email } });
 
-    if (!user || user.password !== password) {
+    if (!user) {
+      return { error: "Invalid email or password." };
+    }
+
+    // Support both bcrypt-hashed passwords and legacy plain-text passwords
+    const isHashed = user.password.startsWith("$2a$") || user.password.startsWith("$2b$");
+    const passwordMatch = isHashed
+      ? await bcrypt.compare(password, user.password)
+      : user.password === password;
+
+    if (!passwordMatch) {
       return { error: "Invalid email or password." };
     }
 
@@ -52,14 +63,34 @@ export async function createUser(prevState: FormState, formData: FormData): Prom
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const role = formData.get("role") as "USER" | "ADMIN";
+  const picFile = formData.get("pic") as File | null;
 
   if (!name || !email || !password) {
     return { success: false, error: "Name, email, and password are required." };
   }
 
+  let picBuffer: Buffer | null = null;
+  if (picFile && picFile.size > 0) {
+    try {
+      const arrayBuffer = await picFile.arrayBuffer();
+      picBuffer = Buffer.from(arrayBuffer);
+    } catch (e) {
+      console.error("Failed to read user pic file:", e);
+    }
+  }
+
   try {
+    // Hash the password with a cost factor of 12 before storing
+    const hashedPassword = await bcrypt.hash(password, 12);
+
     await db.user.create({
-      data: { name, email, password, role: role || "USER" },
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: role || "USER",
+        pic: picBuffer || undefined,
+      },
     });
     revalidatePath("/dashboard");
     return { success: true, error: null };

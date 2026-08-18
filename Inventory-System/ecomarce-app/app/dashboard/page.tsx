@@ -7,7 +7,7 @@ import UserForm from "../../components/dashboard/UserForm";
 import UserTable from "../../components/dashboard/UserTable";
 
 export const metadata: Metadata = {
-  title: "Users — Inventory Management System",
+  title: "Power Fitness",
   description: "Manage users in the Enterprise Inventory Management System.",
 };
 

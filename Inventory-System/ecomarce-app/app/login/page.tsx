@@ -4,7 +4,7 @@ import { getSession } from "../../lib/session";
 import LoginForm from "../../components/login/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Sign In — Inventory Management System",
+  title: "Power Fitness",
   description: "Sign in to access the Inventory Management System dashboard.",
 };
 
@@ -32,13 +32,15 @@ export default async function LoginPage() {
         {/* Card */}
         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/40 p-8 sm:p-10">
           {/* Logo / Brand */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30 mb-4">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
+          <div className="text-center mb-8 flex flex-col items-center">
+            <div className="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-white/95 border border-slate-700/50 shadow-xl shadow-indigo-500/10 mb-4">
+              <img
+                src="/uploads/Logo.png"
+                alt="Power Fitness"
+                className="h-10 w-auto object-contain"
+              />
             </div>
-            <h1 className="text-2xl font-extrabold text-white tracking-tight">Inventory System</h1>
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">Power Fitness</h1>
             <p className="text-slate-400 text-sm mt-1">Sign in to your account to continue</p>
           </div>
 

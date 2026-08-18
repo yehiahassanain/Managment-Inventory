@@ -3,7 +3,7 @@ import { getInventoryOverview, getSalesByCategory } from "../actions";
 import CategoryBreakdown from "../../../../components/analytics/CategoryBreakdown";
 
 export const metadata: Metadata = {
-  title: "Inventory Insights — Analytics",
+  title: "Power Fitness",
   description: "Stock levels, low-stock alerts, and inventory value overview.",
 };
 

@@ -1,6 +1,7 @@
 import { User } from "../../prisma/generated/main/client";
 import DeleteButton from "./DeleteButton";
 import { getSession } from "../../lib/session";
+import { formatUserPic } from "../../lib/formatPic";
 
 interface UserTableProps {
   users: User[];
@@ -44,19 +45,29 @@ export default async function UserTable({ users, errorMsg }: UserTableProps) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-800/60">
-          {users.map((user) => (
-            <tr key={user.id} className="group hover:bg-slate-800/30 transition-colors">
-              <td className="py-4 pr-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    {user.name.charAt(0).toUpperCase()}
+          {users.map((user) => {
+            const userPic = formatUserPic(user.pic);
+            return (
+              <tr key={user.id} className="group hover:bg-slate-800/30 transition-colors">
+                <td className="py-4 pr-4">
+                  <div className="flex items-center gap-3">
+                    {userPic ? (
+                      <img
+                        src={userPic}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover border border-indigo-500/30 shadow-sm shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium text-slate-100">{user.name}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{user.email}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-medium text-slate-100">{user.name}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">{user.email}</div>
-                  </div>
-                </div>
-              </td>
+                </td>
               <td className="py-4 px-4 align-middle">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -70,10 +81,11 @@ export default async function UserTable({ users, errorMsg }: UserTableProps) {
                 {/* Delete button */}
               </td>
               <td className="py-4 pl-4 text-right align-middle">
-                {session?.role === "ADMIN" && user.email!= 'yehiahassanain@gmail.com'? <DeleteButton id={user.id} /> : null}
+                {session?.role === "ADMIN" && user.email !== "yehiahassanain@gmail.com" ? <DeleteButton id={user.id} /> : null}
               </td>
             </tr>
-          ))}
+          );
+        })}
         </tbody>
       </table>
     </div>

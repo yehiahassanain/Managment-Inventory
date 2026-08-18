@@ -1,6 +1,8 @@
 import SidebarNav from "./SidebarNav";
 import { getSession } from "../../lib/session";
 import { redirect } from "next/navigation";
+import { db } from "../../lib/db";
+import { formatUserPic } from "../../lib/formatPic";
 
 export default async function DashboardLayout({
   children,
@@ -11,6 +13,30 @@ export default async function DashboardLayout({
   if (!session) {
     redirect("/login");
   }
+
+  // Retrieve user data (including name and pic) from database
+  let user = null;
+  try {
+    if (session.userId) {
+      user = await db.user.findUnique({
+        where: { id: session.userId },
+        select: { id: true, name: true, email: true, role: true, pic: true },
+      });
+    }
+    if (!user && session.email) {
+      user = await db.user.findUnique({
+        where: { email: session.email },
+        select: { id: true, name: true, email: true, role: true, pic: true },
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load user profile in layout:", err);
+  }
+
+  const pic = formatUserPic(user?.pic);
+  const name = user?.name || session.email.split("@")[0];
+  const role = user?.role || session.role;
+  const email = user?.email || session.email;
 
   return (
     <div className="flex min-h-screen bg-[#0b0f1a] text-slate-100 font-sans">
@@ -28,7 +54,7 @@ export default async function DashboardLayout({
         <div className="absolute bottom-0 left-0 w-[400px] h-[350px] rounded-full bg-violet-650/5 blur-[150px]" />
       </div>
 
-      <SidebarNav role={session.role} email={session.email} />
+      <SidebarNav role={role} email={email} name={name} pic={pic} />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 z-10 relative">

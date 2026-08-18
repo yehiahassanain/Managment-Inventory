@@ -4,7 +4,7 @@ import { ensureDefaultCategoriesAndSuppliers } from "../../../lib/seed";
 import ProductsClientPage from "../../../components/products/ProductsClientPage";
 
 export const metadata = {
-  title: "Products — Inventory Management System",
+  title: "Power Fitness",
   description: "View and manage catalog items and stock thresholds.",
 };
 
