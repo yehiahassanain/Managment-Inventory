@@ -69,11 +69,11 @@ export async function createUser(prevState: FormState, formData: FormData): Prom
     return { success: false, error: "Name, email, and password are required." };
   }
 
-  let picBuffer: Buffer | null = null;
+  let picBuffer: Uint8Array | null = null;
   if (picFile && picFile.size > 0) {
     try {
       const arrayBuffer = await picFile.arrayBuffer();
-      picBuffer = Buffer.from(arrayBuffer);
+      picBuffer = new Uint8Array(arrayBuffer);
     } catch (e) {
       console.error("Failed to read user pic file:", e);
     }
