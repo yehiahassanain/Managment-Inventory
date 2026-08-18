@@ -15,7 +15,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Inventory Management System",
   description: "Enterprise Inventory Management System — powered by Next.js & Prisma ORM.",
+  icons: {
+    icon: [
+      { url: "/uploads/Logo.png", type: "image/png" },
+      { url: "/favicon.ico", type: "image/x-icon" },
+    ],
+    shortcut: "/uploads/Logo.png",
+    apple: "/uploads/Logo.png",
+  },
 };
+
 
 export default function RootLayout({
   children,

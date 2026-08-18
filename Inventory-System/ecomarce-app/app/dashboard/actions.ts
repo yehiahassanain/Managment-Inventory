@@ -89,7 +89,7 @@ export async function createUser(prevState: FormState, formData: FormData): Prom
         email,
         password: hashedPassword,
         role: role || "USER",
-        pic: picBuffer || undefined,
+        pic: picBuffer ?? null,
       },
     });
     revalidatePath("/dashboard");
@@ -103,9 +103,35 @@ export async function createUser(prevState: FormState, formData: FormData): Prom
   }
 }
 
+const OWNER_EMAIL = "yehiahassanain@gmail.com";
+
 export async function deleteUser(userId: string) {
   try {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) return { error: "User not found." };
+    if (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+      return { error: "The owner account cannot be deleted." };
+    }
+
+    // Cascade-delete in FK dependency order to avoid constraint errors:
+    // 1. Transactions (reference User directly)
+    await db.inventory_Transaction.deleteMany({ where: { userId } });
+
+    // 2. Inventories created by this user
+    await db.inventory.deleteMany({ where: { userInventoryId: userId } });
+
+    // 3. Items created by this user
+    await db.items.deleteMany({ where: { userItemId: userId } });
+
+    // 4. Categories created by this user
+    await db.category.deleteMany({ where: { userCategoryId: userId } });
+
+    // 5. Suppliers created by this user
+    await db.supplier.deleteMany({ where: { userSupplierId: userId } });
+
+    // 6. Finally delete the user
     await db.user.delete({ where: { id: userId } });
+
     revalidatePath("/dashboard");
     return { success: true };
   } catch (err: unknown) {

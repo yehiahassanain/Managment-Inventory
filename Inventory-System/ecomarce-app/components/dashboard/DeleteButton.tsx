@@ -8,8 +8,8 @@ export default function DeleteButton({ id }: { id: string }) {
 
   function handleDelete() {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    startTransition(() => {
-      deleteUser(id);
+    startTransition(async () => {
+      await deleteUser(id);
     });
   }
 
