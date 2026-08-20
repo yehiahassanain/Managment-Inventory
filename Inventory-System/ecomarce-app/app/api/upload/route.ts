@@ -53,25 +53,51 @@ export async function POST(request: NextRequest) {
   // 4. Validate file size
   if (file.size > MAX_SIZE_BYTES) {
     return Response.json(
-      { error: "File is too large. Maximum allowed size is 5 MB." },
+      { error: "File is too large. Maximum allowed size is 4 MB." },
       { status: 422 }
     );
   }
 
-  // 5. Upload to Vercel Blob (works in both local dev and production)
+  // 5. Choose storage backend based on environment:
+  //    - Real BLOB_READ_WRITE_TOKEN present → Vercel Blob (production)
+  //    - No token / placeholder            → local public/uploads/ (dev)
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  const hasRealBlobToken =
+    blobToken &&
+    blobToken.startsWith("vercel_blob_rw_") &&
+    !blobToken.includes("REPLACE_WITH");
+
   try {
-    const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
+    if (hasRealBlobToken) {
+      // ── Production: Vercel Blob ────────────────────────────────────────────
+      const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
 
-    const blob = await put(uniqueFileName, file, {
-      access: "public",
-      // Preserve the original content type so images are served correctly
-      contentType: file.type,
-    });
+      const blob = await put(uniqueFileName, file, {
+        access: "public",
+        contentType: file.type,
+        token: blobToken,
+      });
 
-    return Response.json({ url: blob.url }, { status: 200 });
+      return Response.json({ url: blob.url }, { status: 200 });
+    } else {
+      // ── Development fallback: local public/uploads/ ────────────────────────
+      const { writeFile, mkdir } = await import("fs/promises");
+      const path = await import("path");
+
+      const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uniqueFileName = `${Date.now()}_${sanitisedName}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+      await mkdir(uploadDir, { recursive: true });
+
+      const arrayBuffer = await file.arrayBuffer();
+      await writeFile(path.join(uploadDir, uniqueFileName), Buffer.from(arrayBuffer));
+
+      return Response.json({ url: `/uploads/${uniqueFileName}` }, { status: 200 });
+    }
   } catch (err) {
-    console.error("[/api/upload] Failed to upload to Vercel Blob:", err);
+    console.error("[/api/upload] Failed to save file:", err);
     return Response.json(
       { error: "Failed to save the file. Please try again." },
       { status: 500 }
