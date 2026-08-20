@@ -1,12 +1,12 @@
 import { type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "../../../lib/jwt";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+// Vercel server-side uploads are limited to 4.5 MB — keep well under that
+const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -58,26 +58,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 5. Save to public/uploads/
+  // 5. Upload to Vercel Blob (works in both local dev and production)
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Ensure the uploads directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
-
-    // Build a unique, sanitised filename
     const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uniqueFileName = `${Date.now()}_${sanitisedName}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
+    const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
 
-    await writeFile(filePath, buffer);
+    const blob = await put(uniqueFileName, file, {
+      access: "public",
+      // Preserve the original content type so images are served correctly
+      contentType: file.type,
+    });
 
-    const url = `/uploads/${uniqueFileName}`;
-    return Response.json({ url }, { status: 200 });
+    return Response.json({ url: blob.url }, { status: 200 });
   } catch (err) {
-    console.error("[/api/upload] Failed to save file:", err);
+    console.error("[/api/upload] Failed to upload to Vercel Blob:", err);
     return Response.json(
       { error: "Failed to save the file. Please try again." },
       { status: 500 }

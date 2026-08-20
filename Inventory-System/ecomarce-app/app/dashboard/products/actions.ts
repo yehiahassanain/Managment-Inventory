@@ -3,49 +3,38 @@
 import { db } from "../../../lib/db";
 import { getSession } from "../../../lib/session";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
+import { put, del } from "@vercel/blob";
 
-// Helper to handle image uploads to /public/uploads/
+// Helper to handle image uploads via Vercel Blob
 async function handleImageUpload(imageFile: File | null): Promise<string | null> {
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
     return null;
   }
 
   try {
-    const arrayBuffer = await imageFile.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const uniqueFileName = `products/${Date.now()}_${cleanFileName}`;
 
-    // Create public/uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadDir, { recursive: true });
+    const blob = await put(uniqueFileName, imageFile, {
+      access: "public",
+      contentType: imageFile.type,
+    });
 
-    // Generate unique filename
-    const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.]/g, "_");
-    const uniqueFileName = `${Date.now()}_${cleanFileName}`;
-    const filePath = path.join(uploadDir, uniqueFileName);
-
-    // Save to disk
-    await writeFile(filePath, buffer);
-    return `/uploads/${uniqueFileName}`;
+    return blob.url;
   } catch (error) {
-    console.error("Error saving image:", error);
+    console.error("Error uploading image to Vercel Blob:", error);
     return null;
   }
 }
 
-// Helper to delete an image file from /public/uploads/ (best-effort, won't throw)
+// Helper to delete a blob image (best-effort, won't throw)
 async function deleteImageFile(imageUrl: string | null | undefined): Promise<void> {
-  if (!imageUrl || !imageUrl.startsWith("/uploads/")) return;
+  // Only attempt deletion for Vercel Blob URLs
+  if (!imageUrl || !imageUrl.includes("blob.vercel-storage.com")) return;
   try {
-    const filename = path.basename(imageUrl);
-    const filePath = path.join(process.cwd(), "public", "uploads", filename);
-    await unlink(filePath);
+    await del(imageUrl);
   } catch (error: unknown) {
-    // If the file doesn't exist (ENOENT), silently skip — otherwise log it
-    if ((error as { code?: string })?.code !== "ENOENT") {
-      console.error("Error deleting image file:", error);
-    }
+    console.error("Error deleting image from Vercel Blob:", error);
   }
 }
 

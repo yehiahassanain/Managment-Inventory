@@ -266,7 +266,7 @@ export default function ProductImageUploader({
                 <span className="text-indigo-400 font-semibold">Click to browse</span>
                 {" "}or drag &amp; drop
               </p>
-              <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP, GIF, SVG · max 5 MB</p>
+              <p className="text-xs text-slate-500 mt-1">PNG, JPG, WEBP, GIF, SVG · max 4 MB</p>
             </div>
           )}
 
