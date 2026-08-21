@@ -62,10 +62,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 5. Choose storage backend based on environment:
-  //    - Real BLOB_READ_WRITE_TOKEN present → Vercel Blob (production)
-  //    - No token / placeholder            → local public/uploads/ (dev)
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+  // Strip surrounding quotes/whitespace — a common paste mistake in Vercel dashboard
+  const blobToken = (process.env.BLOB_READ_WRITE_TOKEN ?? "").trim().replace(/^"|"$/g, "").replace(/^'|'$/g, "");
   const hasRealBlobToken =
     blobToken &&
     blobToken.startsWith("vercel_blob_rw_") &&
@@ -74,13 +72,16 @@ export async function POST(request: NextRequest) {
   // Log token status so it's visible in Vercel Function Logs
   console.log(
     "[/api/upload] BLOB token present:",
-    blobToken ? `yes (starts: ${blobToken.slice(0, 20)}...)` : "NO TOKEN"
+    blobToken ? `yes (starts: ${blobToken.slice(0, 25)}...)` : "NO TOKEN"
   );
 
   // On Vercel the filesystem is read-only — if there's no real token, fail clearly
   if (!hasRealBlobToken) {
+    const hint = blobToken
+      ? `Token found but invalid format. Got: "${blobToken.slice(0, 30)}..." — must start with vercel_blob_rw_`
+      : "No token found — add BLOB_READ_WRITE_TOKEN in Vercel → Settings → Environment Variables";
     return Response.json(
-      { error: "Server misconfiguration: BLOB_READ_WRITE_TOKEN is not set or is a placeholder. Set it in Vercel → Settings → Environment Variables." },
+      { error: `Server misconfiguration: ${hint}` },
       { status: 500 }
     );
   }
