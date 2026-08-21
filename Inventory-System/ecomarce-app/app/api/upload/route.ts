@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { decrypt } from "../../../lib/jwt";
 import { put } from "@vercel/blob";
 
+// ─── Route Segment Config ──────────────────────────────────────────────────────
+// Give the upload route 30 s on Vercel (default is 10 s on Hobby plan)
+export const maxDuration = 30;
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 // Vercel server-side uploads are limited to 4.5 MB — keep well under that
@@ -73,7 +77,11 @@ export async function POST(request: NextRequest) {
       const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
 
-      const blob = await put(uniqueFileName, file, {
+      // Convert File → Buffer so @vercel/blob receives a reliable stream
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const blob = await put(uniqueFileName, buffer, {
         access: "public",
         contentType: file.type,
         token: blobToken,
@@ -98,8 +106,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("[/api/upload] Failed to save file:", err);
+    // Include actual error message so it surfaces in the browser console
+    const message = err instanceof Error ? err.message : String(err);
     return Response.json(
-      { error: "Failed to save the file. Please try again." },
+      { error: `Failed to save the file: ${message}` },
       { status: 500 }
     );
   }
