@@ -102,7 +102,9 @@ export async function POST(request: NextRequest) {
         token: blobToken,
       });
 
-      return Response.json({ url: blob.url }, { status: 200 });
+      return Response.json({
+        url: `/api/blob-image?url=${encodeURIComponent(blob.url)}`,
+      }, { status: 200 });
     }
   } catch (err) {
     console.error("[/api/upload] Failed to save file:", err);
