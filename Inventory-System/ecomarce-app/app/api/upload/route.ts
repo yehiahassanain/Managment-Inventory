@@ -71,8 +71,22 @@ export async function POST(request: NextRequest) {
     blobToken.startsWith("vercel_blob_rw_") &&
     !blobToken.includes("REPLACE_WITH");
 
+  // Log token status so it's visible in Vercel Function Logs
+  console.log(
+    "[/api/upload] BLOB token present:",
+    blobToken ? `yes (starts: ${blobToken.slice(0, 20)}...)` : "NO TOKEN"
+  );
+
+  // On Vercel the filesystem is read-only — if there's no real token, fail clearly
+  if (!hasRealBlobToken) {
+    return Response.json(
+      { error: "Server misconfiguration: BLOB_READ_WRITE_TOKEN is not set or is a placeholder. Set it in Vercel → Settings → Environment Variables." },
+      { status: 500 }
+    );
+  }
+
   try {
-    if (hasRealBlobToken) {
+    {
       // ── Production: Vercel Blob ────────────────────────────────────────────
       const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
@@ -88,21 +102,6 @@ export async function POST(request: NextRequest) {
       });
 
       return Response.json({ url: blob.url }, { status: 200 });
-    } else {
-      // ── Development fallback: local public/uploads/ ────────────────────────
-      const { writeFile, mkdir } = await import("fs/promises");
-      const path = await import("path");
-
-      const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const uniqueFileName = `${Date.now()}_${sanitisedName}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-      await mkdir(uploadDir, { recursive: true });
-
-      const arrayBuffer = await file.arrayBuffer();
-      await writeFile(path.join(uploadDir, uniqueFileName), Buffer.from(arrayBuffer));
-
-      return Response.json({ url: `/uploads/${uniqueFileName}` }, { status: 200 });
     }
   } catch (err) {
     console.error("[/api/upload] Failed to save file:", err);
