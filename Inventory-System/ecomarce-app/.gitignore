@@ -9,6 +9,10 @@
 /dist/
 /generated/
 
+# Uploaded product images (stored locally, not committed to git)
+/public/uploads/products/*
+!/public/uploads/products/.gitkeep
+
 # Logs
 logs
 *.log

@@ -1,15 +1,14 @@
 import { type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { decrypt } from "../../../lib/jwt";
-import { put } from "@vercel/blob";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 // ─── Route Segment Config ──────────────────────────────────────────────────────
-// Give the upload route 30 s on Vercel (default is 10 s on Hobby plan)
 export const maxDuration = 30;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Vercel server-side uploads are limited to 4.5 MB — keep well under that
 const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -62,53 +61,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Strip surrounding quotes/whitespace — a common paste mistake in Vercel dashboard
-  const blobToken = (process.env.BLOB_READ_WRITE_TOKEN ?? "").trim().replace(/^"|"$/g, "").replace(/^'|'$/g, "");
-  const hasRealBlobToken =
-    blobToken &&
-    blobToken.startsWith("vercel_blob_rw_") &&
-    !blobToken.includes("REPLACE_WITH");
-
-  // Log token status so it's visible in Vercel Function Logs
-  console.log(
-    "[/api/upload] BLOB token present:",
-    blobToken ? `yes (starts: ${blobToken.slice(0, 25)}...)` : "NO TOKEN"
-  );
-
-  // On Vercel the filesystem is read-only — if there's no real token, fail clearly
-  if (!hasRealBlobToken) {
-    const hint = blobToken
-      ? `Token found but invalid format. Got: "${blobToken.slice(0, 30)}..." — must start with vercel_blob_rw_`
-      : "No token found — add BLOB_READ_WRITE_TOKEN in Vercel → Settings → Environment Variables";
-    return Response.json(
-      { error: `Server misconfiguration: ${hint}` },
-      { status: 500 }
-    );
-  }
-
+  // 5. Save to public/uploads/products/
   try {
-    {
-      // ── Production: Vercel Blob ────────────────────────────────────────────
-      const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const uniqueFileName = `products/${Date.now()}_${sanitisedName}`;
+    const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const uniqueFileName = `${Date.now()}_${sanitisedName}`;
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
 
-      // Convert File → Buffer so @vercel/blob receives a reliable stream
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
+    await mkdir(uploadDir, { recursive: true });
 
-      const blob = await put(uniqueFileName, buffer, {
-        access: "private",
-        contentType: file.type,
-        token: blobToken,
-      });
+    const arrayBuffer = await file.arrayBuffer();
+    await writeFile(path.join(uploadDir, uniqueFileName), Buffer.from(arrayBuffer));
 
-      return Response.json({
-        url: `/api/blob-image?url=${encodeURIComponent(blob.url)}`,
-      }, { status: 200 });
-    }
+    return Response.json(
+      { url: `/uploads/products/${uniqueFileName}` },
+      { status: 200 }
+    );
   } catch (err) {
     console.error("[/api/upload] Failed to save file:", err);
-    // Include actual error message so it surfaces in the browser console
     const message = err instanceof Error ? err.message : String(err);
     return Response.json(
       { error: `Failed to save the file: ${message}` },
