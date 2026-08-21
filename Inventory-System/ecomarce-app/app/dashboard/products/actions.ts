@@ -6,32 +6,58 @@ import { revalidatePath } from "next/cache";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
-// Helper to save an uploaded image to public/uploads/products/
+// Helper to save an uploaded image — uses Cloudinary in production, local disk in dev
 async function handleImageUpload(imageFile: File | null): Promise<string | null> {
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
     return null;
   }
 
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
+  const useCloudinary = Boolean(cloudName && uploadPreset);
+
   try {
-    const sanitisedName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const uniqueFileName = `${Date.now()}_${sanitisedName}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+    if (useCloudinary) {
+      // ── Cloudinary (production) ──────────────────────────────────────────────────
+      const cloudForm = new FormData();
+      cloudForm.append("file", imageFile);
+      cloudForm.append("upload_preset", uploadPreset!);
+      cloudForm.append("folder", "products");
 
-    await mkdir(uploadDir, { recursive: true });
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        { method: "POST", body: cloudForm }
+      );
 
-    const arrayBuffer = await imageFile.arrayBuffer();
-    await writeFile(path.join(uploadDir, uniqueFileName), Buffer.from(arrayBuffer));
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Cloudinary error: ${err}`);
+      }
 
-    // Return the public-facing relative URL
-    return `/uploads/products/${uniqueFileName}`;
+      const data = (await res.json()) as { secure_url: string };
+      return data.secure_url;
+    } else {
+      // ── Local disk fallback (dev) ─────────────────────────────────────────────────
+      const sanitisedName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uniqueFileName = `${Date.now()}_${sanitisedName}`;
+      const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+
+      await mkdir(uploadDir, { recursive: true });
+
+      const arrayBuffer = await imageFile.arrayBuffer();
+      await writeFile(path.join(uploadDir, uniqueFileName), Buffer.from(arrayBuffer));
+
+      return `/uploads/products/${uniqueFileName}`;
+    }
   } catch (error) {
-    console.error("Error saving image to disk:", error);
+    console.error("Error uploading image:", error);
     return null;
   }
 }
 
-// Helper to delete an image from disk (best-effort, won't throw)
+// Helper to delete an image (best-effort, won't throw)
 async function deleteImageFile(imageUrl: string | null | undefined): Promise<void> {
+  // Only delete local files, not Cloudinary URLs
   if (!imageUrl || !imageUrl.startsWith("/uploads/")) return;
   try {
     const filePath = path.join(process.cwd(), "public", imageUrl);
