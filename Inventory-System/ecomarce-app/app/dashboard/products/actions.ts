@@ -270,7 +270,8 @@ export async function createProduct(formData: FormData) {
   const rawQuantity = formData.get("quantity") as string;
   const rawMinimumStock = formData.get("minimumStock") as string;
   const description = formData.get("description") as string;
-  const imageFile = formData.get("image") as File | null;
+  const imageFile = formData.get("imageFile") as File | null;
+  const existingImageUrl = (formData.get("existingImageUrl") as string)?.trim() || null;
 
   const buyPrice = parseFloat(rawBuyPrice);
   const sellPrice = parseFloat(rawSellPrice);
@@ -342,8 +343,9 @@ export async function createProduct(formData: FormData) {
       }
     }
 
-    // Save image
-    const imageUrl = await handleImageUpload(imageFile);
+    // Save image — prefer the pre-uploaded URL (from /api/upload → Vercel Blob),
+    // fall back to server-side upload of the raw file if present
+    const imageUrl = existingImageUrl || await handleImageUpload(imageFile);
 
     // Run in Prisma Transaction
     await db.$transaction(async (tx) => {
@@ -465,7 +467,7 @@ export async function updateProduct(formData: FormData) {
   const rawQuantity = formData.get("quantity") as string;
   const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
   const description = formData.get("description") as string;
-  const imageFile = formData.get("image") as File | null;
+  const imageFile = formData.get("imageFile") as File | null;
   const existingImageUrl = formData.get("existingImageUrl") as string;
   const transactionType = (formData.get("transactionType") as string) || "Restock";
 
