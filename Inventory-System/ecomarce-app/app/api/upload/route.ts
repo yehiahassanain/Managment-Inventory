@@ -60,18 +60,30 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Choose backend:
-  //    - Cloudinary credentials present → Cloudinary (production / any host)
-  //    - No credentials                 → local public/uploads/products/ (dev)
+  //    - Vercel Blob token present      → Vercel Blob (@vercel/blob)
+  //    - Cloudinary credentials present → Cloudinary
+  //    - No cloud credentials in dev   → local public/uploads/products/ (dev only)
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
-  const useCloudinary = Boolean(cloudName && uploadPreset);
 
   try {
-    if (useCloudinary) {
+    if (blobToken) {
+      // ── Vercel Blob upload ────────────────────────────────────────────────
+      const { put } = await import("@vercel/blob");
+      const sanitisedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uniqueFileName = `${Date.now()}_${sanitisedName}`;
+      const blob = await put(`products/${uniqueFileName}`, file, {
+        access: "public",
+        token: blobToken,
+      });
+      return Response.json({ url: blob.url }, { status: 200 });
+
+    } else if (cloudName && uploadPreset) {
       // ── Cloudinary upload ──────────────────────────────────────────────────
       const cloudForm = new FormData();
       cloudForm.append("file", file);
-      cloudForm.append("upload_preset", uploadPreset!);
+      cloudForm.append("upload_preset", uploadPreset);
       cloudForm.append("folder", "products");
 
       const res = await fetch(
@@ -89,6 +101,13 @@ export async function POST(request: NextRequest) {
 
     } else {
       // ── Local fallback (dev only) ──────────────────────────────────────────
+      const isProduction = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
+      if (isProduction) {
+        throw new Error(
+          "Cloud storage is not configured for production. Please ensure BLOB_READ_WRITE_TOKEN (Vercel Blob) or Cloudinary credentials are set in your environment variables on Vercel."
+        );
+      }
+
       const { writeFile, mkdir } = await import("fs/promises");
       const path = await import("path");
 

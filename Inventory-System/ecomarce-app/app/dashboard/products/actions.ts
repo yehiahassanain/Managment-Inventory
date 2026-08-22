@@ -6,22 +6,32 @@ import { revalidatePath } from "next/cache";
 import { writeFile, mkdir, unlink } from "fs/promises";
 import path from "path";
 
-// Helper to save an uploaded image — uses Cloudinary in production, local disk in dev
+// Helper to save an uploaded image — uses Vercel Blob or Cloudinary in production, local disk in dev
 async function handleImageUpload(imageFile: File | null): Promise<string | null> {
   if (!imageFile || !(imageFile instanceof File) || imageFile.size === 0) {
     return null;
   }
 
+  const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
   const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
-  const useCloudinary = Boolean(cloudName && uploadPreset);
 
   try {
-    if (useCloudinary) {
+    if (blobToken) {
+      // ── Vercel Blob upload ──────────────────────────────────────────────────
+      const { put } = await import("@vercel/blob");
+      const sanitisedName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uniqueFileName = `${Date.now()}_${sanitisedName}`;
+      const blob = await put(`products/${uniqueFileName}`, imageFile, {
+        access: "public",
+        token: blobToken,
+      });
+      return blob.url;
+    } else if (cloudName && uploadPreset) {
       // ── Cloudinary (production) ──────────────────────────────────────────────────
       const cloudForm = new FormData();
       cloudForm.append("file", imageFile);
-      cloudForm.append("upload_preset", uploadPreset!);
+      cloudForm.append("upload_preset", uploadPreset);
       cloudForm.append("folder", "products");
 
       const res = await fetch(
@@ -38,6 +48,13 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
       return data.secure_url;
     } else {
       // ── Local disk fallback (dev) ─────────────────────────────────────────────────
+      const isProduction = process.env.NODE_ENV === "production" || Boolean(process.env.VERCEL);
+      if (isProduction) {
+        throw new Error(
+          "Cloud storage is not configured for production. Please set BLOB_READ_WRITE_TOKEN (Vercel Blob) or Cloudinary credentials in environment variables."
+        );
+      }
+
       const sanitisedName = imageFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const uniqueFileName = `${Date.now()}_${sanitisedName}`;
       const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
@@ -57,8 +74,21 @@ async function handleImageUpload(imageFile: File | null): Promise<string | null>
 
 // Helper to delete an image (best-effort, won't throw)
 async function deleteImageFile(imageUrl: string | null | undefined): Promise<void> {
-  // Only delete local files, not Cloudinary URLs
-  if (!imageUrl || !imageUrl.startsWith("/uploads/")) return;
+  if (!imageUrl) return;
+
+  if (imageUrl.includes("blob.vercel-storage.com")) {
+    try {
+      const { del } = await import("@vercel/blob");
+      const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+      await del(imageUrl, blobToken ? { token: blobToken } : undefined);
+    } catch {
+      // Ignore errors on delete
+    }
+    return;
+  }
+
+  // Only delete local files, not Cloudinary or external URLs
+  if (!imageUrl.startsWith("/uploads/")) return;
   try {
     const filePath = path.join(process.cwd(), "public", imageUrl);
     await unlink(filePath);
