@@ -5,7 +5,7 @@ import StatusBadge from "../../../../components/products/StatusBadge";
 import { getSession } from "../../../../lib/session";
 
 export const metadata = {
-  title: "Product Details — Inventory Management System",
+  title: "Power Fitness",
   description: "View complete product details, pricing, inventory levels, and supplier data.",
 };
 

@@ -13,7 +13,7 @@ import SalesTrendChart from "../../../components/analytics/SalesTrendChart";
 import ChartMetricSwitcher, { ChartMetric } from "../../../components/analytics/ChartMetricSwitcher";
 
 export const metadata: Metadata = {
-  title: "Financial Overview — Analytics",
+  title: "Power Fitness",
   description: "Revenue, profit, and sales trend analysis for administrators.",
 };
 

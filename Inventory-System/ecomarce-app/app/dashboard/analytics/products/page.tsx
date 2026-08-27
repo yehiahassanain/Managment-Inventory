@@ -4,7 +4,7 @@ import TopProductsTable from "../../../../components/analytics/TopProductsTable"
 import RecentActivity from "../../../../components/analytics/RecentActivity";
 
 export const metadata: Metadata = {
-  title: "Products & Audit Log — Analytics",
+  title: "Power Fitness",
   description: "Top-selling products and recent inventory transaction history.",
 };
 
