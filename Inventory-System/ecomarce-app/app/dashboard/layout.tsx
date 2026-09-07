@@ -58,8 +58,8 @@ export default async function DashboardLayout({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 z-10 relative">
-        {/* Content body */}
-        <main id="main-content" tabIndex={-1} className="flex-1 p-6 md:p-10 overflow-y-auto">
+        {/* Content body — pt-14 offsets the fixed mobile top bar */}
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 pt-[calc(3.5rem+1rem)] md:pt-10 md:p-10 overflow-y-auto">
           {children}
         </main>
       </div>

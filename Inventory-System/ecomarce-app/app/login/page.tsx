@@ -13,7 +13,7 @@ export default async function LoginPage() {
   if (session) redirect("/dashboard");
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#0b0f1a] relative overflow-hidden p-4">
+    <main className="min-h-screen flex items-center justify-center bg-[#0b0f1a] relative overflow-y-auto overflow-x-hidden p-4">
       {/* Background decorations */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-indigo-600/10 blur-[120px]" />

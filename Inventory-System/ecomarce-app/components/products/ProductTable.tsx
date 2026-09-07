@@ -17,12 +17,14 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
       <table className="w-full text-left text-sm border-collapse">
         <thead>
           <tr className="border-b border-slate-800/80 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            {/* Always visible */}
             <th className="pb-3 pr-3 font-semibold">Product</th>
-            <th className="pb-3 px-3 font-semibold">Category</th>
-            {isAdmin && <th className="pb-3 px-3 font-semibold">Supplier</th>}
-            {isAdmin && <th className="pb-3 px-3 font-semibold text-right">Prices</th>}
+            {/* Hidden on mobile */}
+            <th className="pb-3 px-3 font-semibold hidden sm:table-cell">Category</th>
+            {isAdmin && <th className="pb-3 px-3 font-semibold hidden lg:table-cell">Supplier</th>}
+            {isAdmin && <th className="pb-3 px-3 font-semibold text-right hidden md:table-cell">Prices</th>}
             <th className="pb-3 px-3 font-semibold text-center">Stock</th>
-            <th className="pb-3 px-3 font-semibold">Status</th>
+            <th className="pb-3 px-3 font-semibold hidden sm:table-cell">Status</th>
             <th className="pb-3 pl-3 font-semibold text-right">Actions</th>
           </tr>
         </thead>
@@ -35,7 +37,7 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
 
             return (
               <tr key={product.id} className="group hover:bg-slate-800/30 transition-colors">
-                {/* Product & SKU */}
+                {/* Product & SKU — always visible */}
                 <td className="py-3 pr-3 align-middle">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-slate-800/60 border border-slate-700/50 flex items-center justify-center overflow-hidden shrink-0">
@@ -53,7 +55,7 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors truncate max-w-[200px]">
+                      <div className="font-semibold text-slate-100 group-hover:text-indigo-400 transition-colors truncate max-w-[150px] sm:max-w-[200px]">
                         {product.name}
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono truncate">
@@ -63,16 +65,16 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
                   </div>
                 </td>
 
-                {/* Category */}
-                <td className="py-3 px-3 align-middle whitespace-nowrap">
+                {/* Category — hidden on mobile */}
+                <td className="py-3 px-3 align-middle whitespace-nowrap hidden sm:table-cell">
                   <span className="text-xs font-medium text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg">
                     {product.category?.name}
                   </span>
                 </td>
 
-                {/* Supplier (Admin Only) */}
+                {/* Supplier — hidden below lg */}
                 {isAdmin && (
-                  <td className="py-3 px-3 align-middle whitespace-nowrap text-slate-400 text-xs">
+                  <td className="py-3 px-3 align-middle whitespace-nowrap text-slate-400 text-xs hidden lg:table-cell">
                     {product.supplier?.name ? (
                       <span className="truncate max-w-[130px] inline-block align-middle">{product.supplier.name}</span>
                     ) : (
@@ -81,26 +83,26 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
                   </td>
                 )}
 
-                {/* Prices (Buy / Sell - Admin Only) */}
+                {/* Prices — hidden below md */}
                 {isAdmin && (
-                  <td className="py-3 px-3 align-middle text-right whitespace-nowrap">
+                  <td className="py-3 px-3 align-middle text-right whitespace-nowrap hidden md:table-cell">
                     <div className="text-slate-100 font-semibold text-xs">${sellPrice.toFixed(2)}</div>
                     <div className="text-[11px] text-slate-500">Buy: ${buyPrice.toFixed(2)}</div>
                   </td>
                 )}
 
-                {/* Stock (Visible to all) */}
+                {/* Stock — always visible */}
                 <td className="py-3 px-3 align-middle text-center whitespace-nowrap">
                   <div className="text-slate-100 font-bold text-xs">{quantity}</div>
                   <div className="text-[10px] text-slate-500">Min: {minStock}</div>
                 </td>
 
-                {/* Status (Visible to all) */}
-                <td className="py-3 px-3 align-middle whitespace-nowrap">
+                {/* Status — hidden on mobile */}
+                <td className="py-3 px-3 align-middle whitespace-nowrap hidden sm:table-cell">
                   <StatusBadge quantity={quantity} minimumStock={minStock} />
                 </td>
 
-                {/* Actions */}
+                {/* Actions — always visible */}
                 <td className="py-3 pl-3 align-middle text-right whitespace-nowrap">
                   <div className="flex items-center justify-end gap-1.5">
                     {/* View Details */}

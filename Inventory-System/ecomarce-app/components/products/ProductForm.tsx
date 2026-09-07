@@ -338,7 +338,7 @@ export default function ProductForm({
               ? "Quantity increased — select the reason for adding stock:"
               : "Quantity decreased — item was sold to a customer:"}
           </p>
-          <div className={`grid gap-3 ${qtyDirection === "increase" ? "grid-cols-3" : "grid-cols-1 max-w-xs"}`}>
+          <div className={`grid gap-3 ${qtyDirection === "increase" ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 max-w-xs"}`}>
             {([
               {
                 value: "Restock",
@@ -447,7 +447,7 @@ export default function ProductForm({
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}

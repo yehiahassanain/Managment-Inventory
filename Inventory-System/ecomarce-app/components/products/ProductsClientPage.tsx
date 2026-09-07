@@ -147,7 +147,7 @@ export default function ProductsClientPage({
         {isAdmin && (
           <button
             onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-95 transition-all shadow-lg shadow-indigo-500/20 cursor-pointer"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-95 transition-all shadow-lg shadow-indigo-500/20 cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -298,14 +298,14 @@ export default function ProductsClientPage({
       </div>
 
       {/* Search and View Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <SearchBar
           value={searchValue}
           onChange={setSearchValue}
           placeholder="Search products by name or SKU..."
         />
 
-        <div className="flex items-center bg-slate-900/65 border border-slate-800 rounded-xl p-1 shrink-0">
+        <div className="flex items-center self-end sm:self-auto bg-slate-900/65 border border-slate-800 rounded-xl p-1 shrink-0">
           <button
             onClick={() => setViewMode("table")}
             className={`p-1.5 rounded-lg transition-all ${
@@ -412,13 +412,13 @@ export default function ProductsClientPage({
 
       {/* Add Product Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
             className="fixed inset-0 bg-[#06080f]/80 backdrop-blur-sm"
             onClick={() => setIsAddOpen(false)}
           />
-          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-            <h2 className="text-xl font-extrabold text-white mb-4">Add New Product</h2>
+          <div className="relative w-full sm:max-w-2xl bg-slate-900 border border-slate-800 sm:rounded-2xl rounded-t-2xl p-4 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom sm:zoom-in-95 duration-200">
+            <h2 className="text-lg sm:text-xl font-extrabold text-white mb-4">Add New Product</h2>
             <ProductForm
               categories={categories}
               suppliers={suppliers}
@@ -432,12 +432,12 @@ export default function ProductsClientPage({
 
       {/* Edit Product Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div
             className="fixed inset-0 bg-[#06080f]/80 backdrop-blur-sm"
             onClick={() => setEditingProduct(null)}
           />
-          <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full sm:max-w-2xl bg-slate-900 border border-slate-800 sm:rounded-2xl rounded-t-2xl p-4 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] sm:max-h-[90vh] animate-in fade-in slide-in-from-bottom sm:zoom-in-95 duration-200">
             <h2 className="text-xl font-extrabold text-white mb-4">Edit Product Info</h2>
             <ProductForm
               categories={categories}

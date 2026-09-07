@@ -36,7 +36,57 @@ export default async function UserTable({ users, errorMsg }: UserTableProps) {
 
   return (
     <div className="flex-1 overflow-x-auto">
-      <table className="w-full text-left text-sm border-collapse">
+      {/* ── Mobile Card List (below sm) ── */}
+      <ul className="sm:hidden space-y-2">
+        {users.map((user) => {
+          const userPic = formatUserPic(user.pic);
+          const canDelete = session?.role === "ADMIN" && user.email !== "yehiahassanain@gmail.com";
+          return (
+            <li
+              key={user.id}
+              className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/30 border border-slate-800/60 hover:border-slate-700/60 transition-colors"
+            >
+              {/* Avatar */}
+              {userPic ? (
+                <img
+                  src={userPic}
+                  alt={user.name}
+                  className="w-10 h-10 rounded-full object-cover border border-indigo-500/30 shadow-sm shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-slate-100 truncate">{user.name}</div>
+                <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-[10px] font-semibold ${
+                    user.role === "ADMIN"
+                      ? "bg-violet-500/15 text-violet-300 border border-violet-500/30"
+                      : "bg-slate-700/60 text-slate-400 border border-slate-600/40"
+                  }`}
+                >
+                  {user.role}
+                </span>
+              </div>
+
+              {/* Delete */}
+              {canDelete && (
+                <div className="shrink-0">
+                  <DeleteButton id={user.id} />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* ── Desktop Table (sm and above) ── */}
+      <table className="hidden sm:table w-full text-left text-sm border-collapse">
         <thead>
           <tr className="border-b border-slate-700/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
             <th className="pb-3 pr-4">User</th>
@@ -68,24 +118,23 @@ export default async function UserTable({ users, errorMsg }: UserTableProps) {
                     </div>
                   </div>
                 </td>
-              <td className="py-4 px-4 align-middle">
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    user.role === "ADMIN"
-                      ? "bg-violet-500/15 text-violet-300 border border-violet-500/30"
-                      : "bg-slate-700/60 text-slate-400 border border-slate-600/40"
-                  }`}
-                >
-                  {user.role}
-                </span>
-                {/* Delete button */}
-              </td>
-              <td className="py-4 pl-4 text-right align-middle">
-                {session?.role === "ADMIN" && user.email !== "yehiahassanain@gmail.com" ? <DeleteButton id={user.id} /> : null}
-              </td>
-            </tr>
-          );
-        })}
+                <td className="py-4 px-4 align-middle">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      user.role === "ADMIN"
+                        ? "bg-violet-500/15 text-violet-300 border border-violet-500/30"
+                        : "bg-slate-700/60 text-slate-400 border border-slate-600/40"
+                    }`}
+                  >
+                    {user.role}
+                  </span>
+                </td>
+                <td className="py-4 pl-4 text-right align-middle">
+                  {session?.role === "ADMIN" && user.email !== "yehiahassanain@gmail.com" ? <DeleteButton id={user.id} /> : null}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

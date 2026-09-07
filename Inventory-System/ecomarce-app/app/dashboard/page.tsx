@@ -36,16 +36,16 @@ export default async function DashboardPage() {
   return (
     <div className="w-full max-w-6xl mx-auto">
       {/* Header section */}
-      <div className="flex justify-between items-center mb-8 border-b border-slate-800/60 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8 border-b border-slate-800/60 pb-5">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
             Users Management
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             All user accounts registered in the database, updated in real-time.
           </p>
         </div>
-        <div className="px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 text-sm font-semibold text-slate-300">
+        <div className="self-start sm:self-auto px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800/80 text-sm font-semibold text-slate-300 shrink-0">
           {users.length} {users.length === 1 ? "User" : "Users"}
         </div>
       </div>

@@ -92,9 +92,9 @@ export default function StatusProductTable({
   return (
     <section className="bg-slate-900/50 backdrop-blur-md border border-slate-800/80 rounded-2xl overflow-hidden shadow-xl transition-all">
       {/* ── Table Header Banner ── */}
-      <div className={`px-6 py-5 border-b border-slate-800/80 bg-gradient-to-r ${config.headerBg} flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+      <div className={`px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-800/80 bg-gradient-to-r ${config.headerBg} flex flex-col sm:flex-row sm:items-center justify-between gap-3`}>
         <div className="flex items-center gap-3">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${config.badgeBg} ${config.accentBorder}`}>
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${config.badgeBg} ${config.accentBorder} shrink-0`}>
             {config.icon}
           </div>
           <div>
@@ -138,14 +138,14 @@ export default function StatusProductTable({
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="bg-slate-950/40 border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-semibold select-none">
               <tr>
-                <th scope="col" className="px-6 py-3.5">Product</th>
-                <th scope="col" className="px-4 py-3.5">Category</th>
+                <th scope="col" className="px-4 sm:px-6 py-3.5">Product</th>
+                <th scope="col" className="px-4 py-3.5 hidden sm:table-cell">Category</th>
                 <th scope="col" className="px-4 py-3.5 text-center">Quantity</th>
-                <th scope="col" className="px-4 py-3.5">Unit Price</th>
+                <th scope="col" className="px-4 py-3.5 hidden md:table-cell">Unit Price</th>
                 <th scope="col" className="px-4 py-3.5">Total Value</th>
-                <th scope="col" className="px-4 py-3.5">Date & Time</th>
-                <th scope="col" className="px-4 py-3.5">Logged By</th>
-                <th scope="col" className="px-6 py-3.5 text-right">Status</th>
+                <th scope="col" className="px-4 py-3.5 hidden lg:table-cell">Date & Time</th>
+                <th scope="col" className="px-4 py-3.5 hidden lg:table-cell">Logged By</th>
+                <th scope="col" className="px-4 sm:px-6 py-3.5 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/40">
@@ -155,7 +155,7 @@ export default function StatusProductTable({
                   className="hover:bg-slate-800/30 transition-colors duration-150 group"
                 >
                   {/* Product Cell */}
-                  <td className="px-6 py-3.5">
+                  <td className="px-4 sm:px-6 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0 overflow-hidden relative">
                         {item.productImage ? (
@@ -172,7 +172,7 @@ export default function StatusProductTable({
                           </svg>
                         )}
                       </div>
-                      <div className="min-w-0 max-w-[200px]">
+                      <div className="min-w-0 max-w-[140px] sm:max-w-[200px]">
                         <Link
                           href={`/dashboard/products/${item.productId}`}
                           className="font-semibold text-white hover:text-indigo-400 transition-colors block truncate"
@@ -190,7 +190,7 @@ export default function StatusProductTable({
                   </td>
 
                   {/* Category Cell */}
-                  <td className="px-4 py-3.5 whitespace-nowrap">
+                  <td className="px-4 py-3.5 whitespace-nowrap hidden sm:table-cell">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-800/80 text-slate-300 border border-slate-700/60">
                       {item.categoryName}
                     </span>
@@ -204,7 +204,7 @@ export default function StatusProductTable({
                   </td>
 
                   {/* Unit Price Cell */}
-                  <td className="px-4 py-3.5 whitespace-nowrap">
+                  <td className="px-4 py-3.5 whitespace-nowrap hidden md:table-cell">
                     <div className="text-slate-300 font-medium">
                       {statusType === "Sold" || statusType === "Return"
                         ? fmtCurrency(item.unitSellPrice)
@@ -223,12 +223,12 @@ export default function StatusProductTable({
                   </td>
 
                   {/* Date & Time Cell */}
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px]">
+                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 text-[11px] hidden lg:table-cell">
                     {item.formattedDate}
                   </td>
 
                   {/* Logged By Cell */}
-                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-400">
+                  <td className="px-4 py-3.5 whitespace-nowrap text-slate-400 hidden lg:table-cell">
                     <div className="flex items-center gap-1.5">
                       <div className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700/60 flex items-center justify-center text-[10px] font-bold text-indigo-400">
                         {item.loggedBy.charAt(0).toUpperCase()}
@@ -240,7 +240,7 @@ export default function StatusProductTable({
                   </td>
 
                   {/* Status Badge Cell */}
-                  <td className="px-6 py-3.5 whitespace-nowrap text-right">
+                  <td className="px-4 sm:px-6 py-3.5 whitespace-nowrap text-right">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${config.badgeBg}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${config.dotBg}`} />
                       {config.label}
