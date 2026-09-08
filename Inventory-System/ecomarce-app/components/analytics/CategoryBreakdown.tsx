@@ -1,11 +1,11 @@
-﻿import { CategorySales } from "../../app/dashboard/analytics/actions";
+import { CategorySales } from "../../app/dashboard/analytics/actions";
 
 interface Props {
   data: CategorySales[];
 }
 
 function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(n);
 }
 
 const BAR_COLORS = [

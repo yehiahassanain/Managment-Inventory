@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import { TopProduct } from "../../app/dashboard/analytics/actions";
 
 interface Props {
@@ -6,7 +6,7 @@ interface Props {
 }
 
 function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(n);
 }
 
 const rankColors = ["text-amber-400", "text-slate-400", "text-orange-700"];

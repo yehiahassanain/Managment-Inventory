@@ -15,7 +15,7 @@ interface StatusAnalysisClientProps {
 function fmtCurrency(val: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "EGP",
     maximumFractionDigits: 0,
   }).format(val);
 }

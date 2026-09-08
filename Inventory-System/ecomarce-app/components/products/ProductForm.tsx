@@ -248,7 +248,7 @@ export default function ProductForm({
           <>
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                Buy Price ($) *
+                Buy Price (EGP) *
               </label>
               <input
                 name="buyPrice"
@@ -264,7 +264,7 @@ export default function ProductForm({
 
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-                Sell Price ($) *
+                Sell Price (EGP) *
               </label>
               <input
                 name="sellPrice"

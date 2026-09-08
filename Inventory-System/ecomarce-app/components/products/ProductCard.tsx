@@ -66,8 +66,8 @@ export default function ProductCard({ product, onEdit, onDelete, isAdmin = false
             <>
               <div>
                 <span className="text-slate-500 text-xs block">Prices</span>
-                <span className="text-slate-100 font-semibold">${sellPrice.toFixed(2)}</span>
-                <span className="text-[10px] text-slate-500 ml-1">cost: ${buyPrice.toFixed(2)}</span>
+                <span className="text-slate-100 font-semibold">EGP {sellPrice.toFixed(2)}</span>
+                <span className="text-[10px] text-slate-500 ml-1">cost: EGP {buyPrice.toFixed(2)}</span>
               </div>
               <div className="text-right">
                 <span className="text-slate-500 text-xs block">Stock</span>

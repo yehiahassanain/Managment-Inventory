@@ -100,24 +100,24 @@ export default async function ProductDetailsPage({ params }: PageProps) {
               
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-500">Inventory Cost</span>
-                <span className="font-semibold text-slate-200">${inventoryCost.toFixed(2)}</span>
+                <span className="font-semibold text-slate-200">EGP {inventoryCost.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-500">Total Expected Revenue</span>
-                <span className="font-semibold text-slate-200">${totalValue.toFixed(2)}</span>
+                <span className="font-semibold text-slate-200">EGP {totalValue.toFixed(2)}</span>
               </div>
 
               <div className="flex justify-between items-center text-sm">
                 <span className="text-slate-500">Total Expected Profit</span>
                 <span className={`font-semibold ${potentialProfit >= 0 ? "text-emerald-450" : "text-red-450"}`}>
-                  ${potentialProfit.toFixed(2)}
+                  EGP {potentialProfit.toFixed(2)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center text-sm border-t border-slate-800/60 pt-3">
                 <span className="text-slate-450 font-medium">Total Inventory Value</span>
-                <span className="font-bold text-slate-100">${totalValue.toFixed(2)}</span>
+                <span className="font-bold text-slate-100">EGP {totalValue.toFixed(2)}</span>
               </div>
             </div>
           )}
@@ -175,16 +175,16 @@ export default async function ProductDetailsPage({ params }: PageProps) {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
                 <div>
                   <span className="text-slate-550 block text-xs">Purchase Price</span>
-                  <span className="text-slate-200 font-semibold text-base">${buyPrice.toFixed(2)}</span>
+                  <span className="text-slate-200 font-semibold text-base">EGP {buyPrice.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-slate-550 block text-xs">Selling Price</span>
-                  <span className="text-slate-100 font-semibold text-base">${sellPrice.toFixed(2)}</span>
+                  <span className="text-slate-100 font-semibold text-base">EGP {sellPrice.toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-slate-550 block text-xs">Profit per Unit</span>
                   <span className={`font-semibold text-base block ${profit >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    ${profit.toFixed(2)}
+                    EGP {profit.toFixed(2)}
                   </span>
                 </div>
                 <div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { TrendPoint } from "../../app/dashboard/analytics/actions";
 
@@ -13,8 +13,8 @@ function formatDate(dateStr: string) {
 }
 
 function formatCurrency(n: number) {
-  if (n >= 1000) return `$${(n / 1000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
+  if (n >= 1000) return `EGP ${(n / 1000).toFixed(1)}k`;
+  return `EGP ${n.toFixed(0)}`;
 }
 
 export default function SalesTrendChart({ data, activeMetric }: Props) {

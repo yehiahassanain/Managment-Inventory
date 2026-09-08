@@ -86,8 +86,8 @@ export default function ProductTable({ products, onEdit, onDelete, isAdmin = fal
                 {/* Prices — hidden below md */}
                 {isAdmin && (
                   <td className="py-3 px-3 align-middle text-right whitespace-nowrap hidden md:table-cell">
-                    <div className="text-slate-100 font-semibold text-xs">${sellPrice.toFixed(2)}</div>
-                    <div className="text-[11px] text-slate-500">Buy: ${buyPrice.toFixed(2)}</div>
+                    <div className="text-slate-100 font-semibold text-xs">EGP {sellPrice.toFixed(2)}</div>
+                    <div className="text-[11px] text-slate-500">Buy: EGP {buyPrice.toFixed(2)}</div>
                   </td>
                 )}
 

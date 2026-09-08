@@ -14,7 +14,7 @@ interface StatusProductTableProps {
 function fmtCurrency(val: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "EGP",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(val);

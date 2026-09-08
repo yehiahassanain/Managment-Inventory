@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 function fmt(n: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: "EGP",
     maximumFractionDigits: 0,
   }).format(n);
 }
