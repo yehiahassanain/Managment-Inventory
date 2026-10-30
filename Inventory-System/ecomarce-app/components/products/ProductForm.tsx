@@ -68,11 +68,11 @@ export default function ProductForm({
     const buyPrice = parseFloat(rawBuyPrice);
     const sellPrice = parseFloat(rawSellPrice);
     const rawQuantity = formData.get("quantity") as string;
-    const parsedQty = parseInt(rawQuantity, 10);
+    const parsedQty = parseFloat(rawQuantity);
     const quantity = (rawQuantity !== null && rawQuantity !== "" && !isNaN(parsedQty))
       ? parsedQty
       : (initialProduct?.quantity ?? 0);
-    const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
+    const minimumStock = parseFloat(formData.get("minimumStock") as string);
     const submittedTransactionType = formData.get("transactionType") as string;
     const transactionType = qtyDirection === "decrease" ? "Sold" : submittedTransactionType;
     if (qtyDirection === "decrease") {
@@ -168,30 +168,16 @@ export default function ProductForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Barcode / UPC
-          </label>
-          <input
-            name="barcode"
-            defaultValue={initialProduct?.barcode || ""}
-            placeholder="Auto-generated if left blank"
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
-            Description
-          </label>
-          <input
-            name="description"
-            defaultValue={initialProduct?.description || ""}
-            placeholder="Brief item summary"
-            className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
-          />
-        </div>
+      <div>
+        <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1.5">
+          Barcode / UPC
+        </label>
+        <input
+          name="barcode"
+          defaultValue={initialProduct?.barcode || ""}
+          placeholder="Auto-generated if left blank"
+          className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+        />
       </div>
 
       {/* Category & Supplier */}
@@ -297,10 +283,11 @@ export default function ProductForm({
             min="0"
             defaultValue={initialProduct?.quantity ?? ""}
             placeholder="0"
+            step="0.01"
             onChange={(e) => {
               if (!initialProduct) return;
               const val = e.target.value;
-              const newQty = val !== "" && !isNaN(parseInt(val, 10)) ? parseInt(val, 10) : originalQty;
+              const newQty = val !== "" && !isNaN(parseFloat(val)) ? parseFloat(val) : originalQty;
               const newDir = newQty > originalQty ? "increase" : newQty < originalQty ? "decrease" : "same";
               const oldDir = currentQty > originalQty ? "increase" : currentQty < originalQty ? "decrease" : "same";
               if (newDir !== oldDir) setSelectedType(null);
@@ -320,6 +307,7 @@ export default function ProductForm({
             type="number"
             required
             min="0"
+            step="0.01"
             defaultValue={initialProduct?.minimumStock ?? ""}
             placeholder="5"
             className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
@@ -443,6 +431,7 @@ export default function ProductForm({
           rows={3}
           defaultValue={initialProduct?.description || ""}
           placeholder="Detailed description of the product..."
+          dir="auto"
           className="w-full px-3.5 py-2 bg-slate-800/40 border border-slate-700/50 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
         />
       </div>

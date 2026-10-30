@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "Inventory" ALTER COLUMN "quantity" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "Inventory_Transaction" ALTER COLUMN "quantity" SET DATA TYPE DOUBLE PRECISION;
+
+-- AlterTable
+ALTER TABLE "Items" ALTER COLUMN "minimumStock" SET DATA TYPE DOUBLE PRECISION;

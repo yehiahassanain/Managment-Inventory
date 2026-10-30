@@ -275,8 +275,8 @@ export async function createProduct(formData: FormData) {
 
   const buyPrice = parseFloat(rawBuyPrice);
   const sellPrice = parseFloat(rawSellPrice);
-  const quantity = parseInt(rawQuantity, 10);
-  const minimumStock = parseInt(rawMinimumStock, 10);
+  const quantity = parseFloat(rawQuantity);
+  const minimumStock = parseFloat(rawMinimumStock);
 
   // Validation
   if (!name || !categoryId || isNaN(buyPrice) || isNaN(sellPrice) || isNaN(quantity) || isNaN(minimumStock)) {
@@ -465,7 +465,7 @@ export async function updateProduct(formData: FormData) {
   const rawBuyPrice = formData.get("buyPrice") as string;
   const rawSellPrice = formData.get("sellPrice") as string;
   const rawQuantity = formData.get("quantity") as string;
-  const minimumStock = parseInt(formData.get("minimumStock") as string, 10);
+  const minimumStock = parseFloat(formData.get("minimumStock") as string);
   const description = formData.get("description") as string;
   const imageFile = formData.get("imageFile") as File | null;
   const existingImageUrl = formData.get("existingImageUrl") as string;
@@ -496,7 +496,7 @@ export async function updateProduct(formData: FormData) {
       ? (rawSupplierId || null)
       : existingProduct.supplierId;
 
-    const parsedQty = parseInt(rawQuantity, 10);
+    const parsedQty = parseFloat(rawQuantity);
     const quantity = (rawQuantity !== null && rawQuantity !== "" && !isNaN(parsedQty))
       ? parsedQty
       : (existingProduct.inventory?.quantity ?? 0);

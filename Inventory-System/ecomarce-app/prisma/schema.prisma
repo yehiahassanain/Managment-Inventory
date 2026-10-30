@@ -37,7 +37,7 @@ model Items {
   barcode      String     @unique
   imageUrl     String?
   description  String
-  minimumStock Int
+  minimumStock Float
   note         String
   createdOn    DateTime   @default(now())
   createdBy    String
@@ -72,7 +72,7 @@ model Inventory {
   id              String                  @id @default(uuid())
   sellPrice       Float
   buyPrice        Float
-  quantity        Int
+  quantity        Float
   Note            String
   createdAt       DateTime                @default(now())
   createdBy       String
@@ -89,7 +89,7 @@ model Inventory {
 
 model Inventory_Transaction {
   id        String      @id @default(uuid())
-  quantity  Int
+  quantity  Float
   type      TransactionType
   createdBy String
   createdAt DateTime    @default(now())
